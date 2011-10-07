@@ -7,23 +7,24 @@ CC      := gcc
 LD      := ld
 AS      := nasm
  
-CFLAGS  := -Wall -Wextra -nostdlib -nostartfiles -nodefaultlibs
+CFLAGS  := -std=c99 -Wall -Wextra -nostdlib -nostartfiles -nodefaultlibs
 LDFLAGS := -T linker.ld
- 
+ASFLAGS := -f elf
  
 .PHONY : build clean
+
+all: image
  
 build: $(TARGET).bin
  
 $(TARGET).bin : $(OBJS)
-	$(OBJCOPY) -v -O binary $< $@
-	-@gbafix $@
+	$(LD) $(LDFLAGS) -o $@ $(OBJS)
  
-%.o : %.c
+kernel.o : kernel.c
 	$(CC) $< $(CFLAGS) -o $@
 	
 loader.o : loader.s
-	$(LD) $(CFLAGS) -o $@
+	$(AS)  $(ASFLAGS) -o $@ $<
  
 image: $(TARGET).img
  
