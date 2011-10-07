@@ -17,6 +17,8 @@ MultiBootHeader:
  
 ; reserve initial kernel stack space
 STACKSIZE equ 0x4000                  ; that's 16k.
+GDTSIZE equ 0x10000                   ; that's 64k.
+LDTSIZE equ 0x10000                   ; that's 64k.
  
 loader:
    mov esp, stack+STACKSIZE           ; set up the stack
@@ -34,3 +36,8 @@ section .bss
 align 4
 stack:
    resb STACKSIZE                     ; reserve 16k stack on a doubleword boundary
+_k_arch_gdt:
+   resb GDTSIZE
+_k_arch_ldt:
+   resb LDTSIZE
+

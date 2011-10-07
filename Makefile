@@ -1,13 +1,13 @@
 
 PROJ    := k
 TARGET  := $(PROJ)
-OBJS    := kernel.o loader.o
+OBJS    := kernel.o loader.o arch.o
 
 CC      := gcc
 LD      := ld
 AS      := nasm
  
-CFLAGS  := -std=c99 -Wall -Wextra -nostdlib -nostartfiles -nodefaultlibs
+CFLAGS  := -std=c99 -Wall -Wextra -nostdlib -nostartfiles -nodefaultlibs -c
 LDFLAGS := -T linker.ld
 ASFLAGS := -f elf
  
@@ -21,6 +21,9 @@ $(TARGET).bin : $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
  
 kernel.o : kernel.c
+	$(CC) $< $(CFLAGS) -o $@
+
+arch.o : arch.c
 	$(CC) $< $(CFLAGS) -o $@
 	
 loader.o : loader.s
