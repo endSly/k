@@ -1,6 +1,9 @@
+
+#include "arch.h"
+
 void kmain( void* mbd, unsigned int magic )
 {
-   if ( magic != 0x2BADB002 )
+   if (magic != 0x2BADB002)
    {
       /* Something went not according to specs. Print an error */
       /* message and halt, but do *not* rely on the multiboot */
@@ -10,15 +13,17 @@ void kmain( void* mbd, unsigned int magic )
    /* You could either use multiboot.h */
    /* (http://www.gnu.org/software/grub/manual/multiboot/multiboot.html#multiboot_002eh) */
    /* or do your offsets yourself. The following is merely an example. */ 
-   char * boot_loader_name =(char*) ((long*)mbd)[16];
+   char* boot_loader_name =(char*) ((long*)mbd)[16];
  
    /* Print a letter to screen to see everything is working: */
-    unsigned char *videoram = (unsigned char *) 0xb8000;
+    unsigned char* screen = (unsigned char *) 0xb8000;
     
-    for (int i = 0; i < 16; i++) {
-        videoram[i << 1] = boot_loader_name[i]; 
-        videoram[i << 1 + 1] = 0x07;
+    for (int i = 0; i < 80; i++) {
+        screen[i << 1] = boot_loader_name[i]; 
+        screen[i << 1 + 1] = 0x07;
     }
+    
+    karch_init();
     
     for (; ; ) { }
 }
