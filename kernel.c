@@ -1,29 +1,24 @@
 
 #include "arch.h"
 
-void kmain( void* mbd, unsigned int magic )
+void kernel_main( void* mbd, unsigned int magic )
 {
-   if (magic != 0x2BADB002)
-   {
+    if (magic != 0x2BADB002) {
       /* Something went not according to specs. Print an error */
       /* message and halt, but do *not* rely on the multiboot */
       /* data structure. */
-   }
+    }
+
+    char* boot_loader_name =(char*) ((long*)mbd)[16];
  
-   /* You could either use multiboot.h */
-   /* (http://www.gnu.org/software/grub/manual/multiboot/multiboot.html#multiboot_002eh) */
-   /* or do your offsets yourself. The following is merely an example. */ 
-   char* boot_loader_name =(char*) ((long*)mbd)[16];
- 
-   /* Print a letter to screen to see everything is working: */
     unsigned char* screen = (unsigned char *) 0xb8000;
     
-    for (int i = 0; i < 80; i++) {
+    for (int i = 0; i < 40; i++) {
         screen[i << 1] = boot_loader_name[i]; 
-        screen[i << 1 + 1] = 0x07;
+        screen[(i << 1) + 1] = 0x07;
     }
     
-    karch_init();
+    arch_init();
     
     for (; ; ) { }
 }
