@@ -24,7 +24,7 @@ loader:
    mov esp, stack+STACKSIZE           ; set up the stack
    push eax                           ; pass Multiboot magic number
    push ebx                           ; pass Multiboot info structure
- 
+   cli
    call  kernel_main                  ; call kernel proper
  
    cli
