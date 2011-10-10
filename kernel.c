@@ -1,5 +1,6 @@
 
 #include "arch.h"
+#include "lib.h"
 
 void kernel_main( void* mbd, unsigned int magic )
 {
@@ -9,16 +10,11 @@ void kernel_main( void* mbd, unsigned int magic )
       /* data structure. */
     }
 
-    char* boot_loader_name =(char*) ((long*)mbd)[16];
- 
-    unsigned char* screen = (unsigned char *) 0xb8000;
-    
-    for (int i = 0; i < 80; i++) {
-        screen[i << 1] = boot_loader_name[i]; 
-        screen[(i << 1) + 1] = 0x07;
-    }
+    kcls();
     
     arch_init();
     
+    kputs("System Initialized!");
+
     for (; ; ) { }
 }

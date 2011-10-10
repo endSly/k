@@ -4,7 +4,7 @@
 #include "arch.h"
 
 void arch_init_gdt(void);
-void arch_set_gdt_desc(dword_t offset, dword_t base, dword_t limit, byte_t type);
+void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t access, byte_t gran);
 void arch_init_idt(void);
 void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags);
 
@@ -16,25 +16,6 @@ ldt_desc ldt[8192] __attribute__ ((aligned (4))); // __attribute__ ((aligned (40
 idt_entry idt[256] __attribute__ ((aligned (4)));
 
 tss os_tss __attribute__ ((aligned (4)));
-
-INLINE void outb(word_t port, word_t value)
-{
-    __asm__ volatile ("outb %1, %0" : : "dN" (port), "a" (value));
-}
-
-INLINE byte_t inb(word_t port)
-{
-    byte_t ret;
-    __asm__ volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
-    return ret;
-}
-
-INLINE word_t inw(word_t port)
-{
-    word_t ret;
-    __asm__ volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
-    return ret;
-}
 
 struct table_ptr { word_t limit; dword_t base; } __attribute__((packed));
 
@@ -51,41 +32,28 @@ void arch_init(void)
 void arch_init_gdt(void)
 {
     // Setup GDT
-    arch_set_gdt_desc(0x00, 0, 0, 0); // Set null selector
-    arch_set_gdt_desc(0x08, 0, 0xffffffff, 0x9A); // Code
-    arch_set_gdt_desc(0x10, 0, 0xffffffff, 0x92); // Data
-    arch_set_gdt_desc(0x18, (dword_t) &os_tss, sizeof(tss), 0x89); // TSS
+    arch_set_gdt_desc(0, 0, 0, 0, 0); // Set null selector
+    arch_set_gdt_desc(1, 0, 0xFFFFFFFF, 0x9A, 0xCF); // Code
+    arch_set_gdt_desc(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // Data
+    arch_set_gdt_desc(3, (dword_t) &os_tss, sizeof(tss), 0x89, 0xCF); // TSS
     
     // Load GDT
-    struct table_ptr gdt_desc = {sizeof(gdt), (dword_t) gdt} ;
+    struct table_ptr gdt_desc = {sizeof(gdt) - 1, (dword_t) gdt} ;
     gdt_flush((dword_t) &gdt_desc);
 }
 
 
-void arch_set_gdt_desc(dword_t offset, dword_t base, dword_t limit, byte_t type)
+void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t access, byte_t gran)
 {
-    gdt_desc *desc = gdt + offset;
+    gdt[index].base_low = (base & 0xFFFF);
+    gdt[index].base_middle = (base >> 16) & 0xFF;
+    gdt[index].base_high = (base >> 24) & 0xFF;
     
-    if (limit > 0xFFFF) { // Adjust granularity if required
-        limit = limit >> 12;
-        desc->b[6] = 0xC0;
-    } else {
-        desc->b[6] = 0x40;
-    }
+    gdt[index].limit_low = (limit & 0xFFFF);
+    gdt[index].granularity = (limit >> 16) & 0x0F;
     
-    // limit
-    desc->b[0] = limit & 0xFF;
-    desc->b[1] = (limit >> 8) & 0xFF;
-    desc->b[6] |= (limit >> 16) & 0xF;
-    
-    // base 
-    desc->b[2] = base & 0xFF;
-    desc->b[3] = (base >> 8) & 0xFF;
-    desc->b[4] = (base >> 16) & 0xFF;
-    desc->b[7] = (base >> 24) & 0xFF;
-    
-    // type
-    desc->b[5] = type;
+    gdt[index].granularity |= gran & 0xF0;
+    gdt[index].access = access;
 }
 
 /*
@@ -163,7 +131,7 @@ void arch_init_idt(void)
     arch_set_idt_entry(31, (dword_t)&isr31, 0x08, 0x8E);
 
     // Load IDT
-    struct table_ptr idt_desc = {sizeof(idt), (dword_t)idt} ;
+    struct table_ptr idt_desc = {sizeof(idt) - 1, (dword_t)idt} ;
     idt_flush((dword_t) &idt_desc);
 }
 
