@@ -19,8 +19,7 @@ typedef struct {
     byte_t b[8];
 } __attribute__((packed)) ldt_desc;
 
-typedef struct idt_entry_struct
-{
+typedef struct idt_entry_struct {
     word_t base_lo;
     word_t sel;
     byte_t always0;
@@ -64,8 +63,8 @@ void arch_init_rtc(long freq);
 void gdt_flush(dword_t gdt_ptr);    // See x86.s
 void idt_flush(dword_t gdt_ptr);
 
-gdt_desc gdt[8192] __attribute__ ((aligned (4))); // __attribute__ ((aligned (4096))); if pagination enabled
-ldt_desc ldt[8192] __attribute__ ((aligned (4))); // __attribute__ ((aligned (4096))); if pagination enabled
+gdt_desc gdt[8192] __attribute__ ((aligned (4096)));
+ldt_desc ldt[8192] __attribute__ ((aligned (4096)));
 idt_entry idt[256] __attribute__ ((aligned (4)));
 
 interrupt_handler interrupt_handlers[256] __attribute__ ((aligned (4)));
@@ -94,7 +93,7 @@ void arch_init_gdt(void)
     arch_set_gdt_desc(3, (dword_t) &os_tss, sizeof(tss), 0x89, 0xCF); // TSS
     
     // Load GDT
-    struct table_ptr gdt_desc = {sizeof(gdt) - 1, (dword_t) gdt} ;
+    struct table_ptr gdt_desc = {sizeof(gdt) - 1, (dword_t) gdt};
     gdt_flush((dword_t) &gdt_desc);
 }
 
