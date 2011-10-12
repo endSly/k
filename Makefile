@@ -6,7 +6,7 @@ CC      := gcc
 LD      := ld
 AS      := nasm
 
-CFLAGS  := -std=c99 -m32 -Wall -Wextra -nostdlib -nostartfiles -nodefaultlibs -nostdinc -fno-builtin -fno-stack-protector -c
+CFLAGS  := -std=c99 -m32 -nostdlib -nostartfiles -nodefaultlibs -nostdinc -fno-builtin -fno-stack-protector -c
 LDFLAGS := -melf_i386 -T linker.ld
 ASFLAGS := -f elf
 
