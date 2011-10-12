@@ -1,13 +1,12 @@
-
 #include "lib.h"
 
 #include "screen.h"
 
-
+// Write a string at the cursor's current position
 int puts(const char* str)
 {
     int l = 0;
-    for (; str[l]; l++)
+    for (; str[l] != '\0'; l++)
         arch_putc(str[l]);
     return l;
 }
