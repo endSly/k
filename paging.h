@@ -2,6 +2,10 @@
 #ifndef __PAGING_H__
 #define __PAGING_H__
 
+#include "types.h"
+
+#define PAGE_SIZE 4096
+
 typedef struct {
     unsigned presence:1;
     unsigned rw:1;
@@ -12,6 +16,13 @@ typedef struct {
     unsigned address:20;
 } page_entry;
 
-extern page_entry page_table[1024] __attribute__ ((aligned (4096)));
+typedef page_entry page_table[1024];
+
+// Definition of OS Page directory
+typedef page_table* page_directory[1024];
+
+void arch_init_paging(void);
+
+void* arch_paging_alloc_page(void);
 
 #endif // __PAGING_H__

@@ -4,6 +4,7 @@
 
 #include "types.h"
 #include "macros.h"
+#include "paging.h"
 
 typedef void (*interrupt_handler)(int err_code);
 
