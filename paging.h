@@ -23,6 +23,6 @@ typedef page_table* page_directory[1024];
 
 void arch_init_paging(void);
 
-void* arch_paging_alloc_page(void);
+void* arch_paging_alloc_pages(size_t pages_count);
 
 #endif // __PAGING_H__
