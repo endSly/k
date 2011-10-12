@@ -11,3 +11,13 @@ int puts(const char* str)
         arch_putc(str[l]);
     return l;
 }
+
+void* memset(void* ptr, int value, size_t num)
+{
+    uint8_t d = ptr;
+    while (num--) {
+        *d = value;
+        d++;
+    }
+    return ptr;
+}
