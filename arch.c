@@ -54,11 +54,11 @@ typedef struct {
  *  Functions
  */
 
-void arch_init_gdt(void);
-void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t access, byte_t gran);
-void arch_init_idt(void);
-void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags);
-void arch_init_rtc(long freq);
+static void arch_init_gdt(void);
+static void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t access, byte_t gran);
+static void arch_init_idt(void);
+static void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags);
+static void arch_init_rtc(long freq);
 
 void gdt_flush(dword_t gdt_ptr);    // Defined in x86.s
 void idt_flush(dword_t gdt_ptr);    // Defined in x86.s
@@ -84,7 +84,7 @@ void arch_init(void)
  *  GDT Functions
  */
 
-void arch_init_gdt(void)
+static void arch_init_gdt(void)
 {
     // Setup GDT
     arch_set_gdt_desc(0, 0, 0, 0, 0); // Set null selector
@@ -98,7 +98,7 @@ void arch_init_gdt(void)
 }
 
 
-void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t access, byte_t gran)
+static void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t access, byte_t gran)
 {
     gdt[index].base_low = (base & 0xFFFF);
     gdt[index].base_middle = (base >> 16) & 0xFF;
@@ -166,7 +166,7 @@ void irq13(void);
 void irq14(void);
 void irq15(void);
 
-void arch_init_idt(void)
+static void arch_init_idt(void)
 {
     // Clear handlers
     for (int i = 0; i < 256; i++)
@@ -242,7 +242,7 @@ void arch_init_idt(void)
     __asm__ volatile ("sti  \n");
 }
 
-void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags)
+static void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags)
 {
     idt[index].base_lo = base & 0xFFFF;
     idt[index].base_hi = (base >> 16) & 0xFFFF;
@@ -254,7 +254,7 @@ void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags)
     idt[index].flags   = flags /* | 0x60 */;
 }
 
-void arch_init_rtc(long freq)
+static void arch_init_rtc(long freq)
 {
     word_t div = (word_t) (1193180 / freq);
     
