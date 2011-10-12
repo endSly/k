@@ -6,6 +6,9 @@
 static dword_t* memory_map;
 static size_t memory_size;
 
+// Defined in linker.ld
+extern int kernel_end;
+
 static page_directory kernel_page_directory __attribute__ ((aligned (PAGE_SIZE)));
 static page_directory* current_page_directory = NULL;
 
@@ -24,6 +27,7 @@ void arch_init_paging(void)
 {
     memory_size = arch_get_memsize();
     memory_map = arch_paging_alloc_pages(memory_size / (sizeof(dword_t) * PAGE_SIZE));
+
 }
 
 void* arch_paging_alloc_pages(size_t pages_count)
