@@ -10,7 +10,8 @@
 // Screen values
 #define SCREEN_CHARS_WIDE 80
 #define SCREEN_CHARS_HIGH 25
-#define SCREEN_SIZE (80 * 25)
+#define SCREEN_SIZE       (80 * 25)
+#define TAB_SIZE          8
 
 // Colors for the screen chars
 // 0:black, 1:blue, 2:green, 3:cyan, 4:red, 5:magenta, 6:brown,
@@ -40,14 +41,14 @@ INLINE void update_cursor(void)
 
 INLINE void scroll(void)
 {
-    int i;
-    for (i = 0; i < SCREEN_SIZE - 80; i++)
-        video_buffer[i] = video_buffer[i + 80];
+    int i = SCREEN_CHARS_WIDE;
+    for (; i < SCREEN_SIZE; ++i)
+        video_buffer[i-SCREEN_CHARS_WIDE] = video_buffer[i];
 
-    for (; i < SCREEN_SIZE; i++)
+    for (i-=SCREEN_CHARS_WIDE; i < SCREEN_CHARS_WIDE; ++i)
         video_buffer[i] = COLOR_ERRASE;
 
-    cursor_pos -= 80;
+    cursor_pos -= SCREEN_CHARS_WIDE;
 }
 
 // Write a char at the cursor's current position
@@ -60,26 +61,20 @@ void arch_putc_color(uint8_t c, uint8_t color)
 {
     switch (c) {
         case '\n':
-            while (++cursor_pos % 80)
-                video_buffer[cursor_pos] = COLOR_ERRASE;
+            while (++cursor_pos % SCREEN_CHARS_WIDE);
             break;
-
         case '\r':
             do {
-                video_buffer[cursor_pos] = COLOR_ERRASE;
-            } while (--cursor_pos % 80);
+                video_buffer[cursor_pos] = (color << 8);
+            } while (--cursor_pos % SCREEN_CHARS_WIDE);
             break;
-
         case '\b':
             if (cursor_pos)
-                video_buffer[cursor_pos--] = COLOR_ERRASE;
+                video_buffer[cursor_pos--] = (color << 8);
             break;
-
         case '\t':
-            while (++cursor_pos % 8)
-                video_buffer[cursor_pos] = COLOR_ERRASE;
+            while (++cursor_pos % TAB_SIZE);
             break;
-
         default:
             video_buffer[cursor_pos++] = (color << 8) | c;
             break;
