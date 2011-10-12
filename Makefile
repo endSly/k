@@ -1,7 +1,7 @@
 
 PROJ    := k
 TARGET  := $(PROJ)
-OBJS    := loader.o x86.o kernel.o arch.o lib.o
+OBJS    := loader.o x86.o kernel.o arch.o lib.o paging.o
 
 CC      := gcc
 LD      := ld

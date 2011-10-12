@@ -60,8 +60,8 @@ void arch_init_idt(void);
 void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags);
 void arch_init_rtc(long freq);
 
-void gdt_flush(dword_t gdt_ptr);    // See x86.s
-void idt_flush(dword_t gdt_ptr);
+void gdt_flush(dword_t gdt_ptr);    // Defined in x86.s
+void idt_flush(dword_t gdt_ptr);    // Defined in x86.s
 
 gdt_desc gdt[8192] __attribute__ ((aligned (4096)));
 ldt_desc ldt[8192] __attribute__ ((aligned (4096)));
