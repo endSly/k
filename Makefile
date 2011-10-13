@@ -1,12 +1,19 @@
 PROJ    := k
 TARGET  := $(PROJ)
-OBJS    := loader.o x86.o kernel.o arch.o lib.o paging.o screen.o
+OBJS    := kernel.o \
+    arch/loader.o \
+    arch/x86.o \
+    arch/arch.o \
+    arch/paging.o \
+    arch/screen.o \
+    lib/lib.o \
+    lib/kprintf.o
 
 CC      := gcc
 LD      := ld
 AS      := nasm
 
-CFLAGS  := -std=c99 -m32 -nostdlib -nostartfiles -nodefaultlibs -nostdinc -fno-builtin -fno-stack-protector -c
+CFLAGS  := -std=c99 -m32 -nostdlib -nostartfiles -nodefaultlibs -nostdinc -fno-builtin -fno-stack-protector -I. -Ilib
 LDFLAGS := -melf_i386 -T linker.ld
 ASFLAGS := -f elf
 
@@ -30,4 +37,4 @@ $(TARGET).img: $(TARGET).bin
 clean :
 	@rm -fv *.img
 	@rm -fv *.bin
-	@rm -fv *.o
+	@rm -fv $(OBJS)

@@ -1,7 +1,7 @@
 
-#include "arch.h"
+#include "arch/arch.h"
+#include "arch/screen.h"
 #include "lib.h"
-#include "screen.h"
 
 #define KERNEL_VERSION "0.0.1"
 
@@ -11,26 +11,25 @@ void rtc_tick(int none)
     static char s = '0';
 
     if (!(++ticks % 1000))
-        arch_putc(s++);
+        kprintf("  Tick 0x%X!\n", ticks);
 }
 
 void int_handled(int none)
 {
-    arch_putc('A');
+    kprintf("  Interrupt!\n");
 }
 
 void kernel_main(void* mbd, unsigned int magic)
 {
     if (magic != 0x2BADB002) {
-
+        puts("Unexpected magic!");
     }
 
     arch_cls();
 
-    puts("  Welcome to k. Version: ");
-    puts(KERNEL_VERSION);
-    puts("\n--------------------------------\n"
-         "Initializing System...");
+    kprintf("\n  Welcome to k. Version: %s", KERNEL_VERSION);
+    kprintf("\n--------------------------------\n"
+            "Initializing System...");
 
     arch_init();
 
@@ -39,7 +38,7 @@ void kernel_main(void* mbd, unsigned int magic)
 
     interrupt_handlers[32] = &rtc_tick;
 
-    puts("Ok!\n");
+    kprintf("Ok!\n");
 
     for (; ; ) { }
 }
