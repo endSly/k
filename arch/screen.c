@@ -45,7 +45,7 @@ INLINE void scroll(void)
     for (; i < SCREEN_SIZE; ++i)
         video_buffer[i-SCREEN_CHARS_WIDE] = video_buffer[i];
 
-    for (i-=SCREEN_CHARS_WIDE; i < SCREEN_CHARS_WIDE; ++i)
+    for (i -= SCREEN_CHARS_WIDE; i < SCREEN_SIZE; ++i)
         video_buffer[i] = COLOR_ERRASE;
 
     cursor_pos -= SCREEN_CHARS_WIDE;
