@@ -78,6 +78,8 @@ void arch_init(void)
     arch_init_gdt();
     arch_init_idt();
     arch_init_rtc(1000);
+    arch_init_paging();
+    
 }
 
 /*

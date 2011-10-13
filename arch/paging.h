@@ -18,7 +18,7 @@ typedef struct {
 
 typedef page_entry page_table[1024];
 
-// Definition of OS Page directory
+// Definition of Page directory
 typedef struct  {
     page_table* tables[1024];
     
@@ -28,6 +28,6 @@ typedef struct  {
 
 void arch_init_paging(void);
 
-void* arch_paging_alloc_page(void);
+//void* arch_paging_alloc_page(void);
 
 #endif // __PAGING_H__
