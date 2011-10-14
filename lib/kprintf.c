@@ -1,7 +1,6 @@
 
 #include "kprintf.h"
 
-#include "stdarg.h"
 #include "types.h"
 #include "arch/screen.h"
 
