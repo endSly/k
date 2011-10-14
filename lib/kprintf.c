@@ -40,7 +40,7 @@ static void kprint_float(double f)
     
 }
 
-static int vkprintf(const char* format, va_list vl) 
+int vkprintf(const char* format, va_list vl) 
 {
     int chars = 0;
     for (const char* s = format; *s; s++) {
@@ -108,4 +108,12 @@ int kprintf(const char* format, ...)
     va_end(ap);
     
     return result;
+}
+
+void panic(const char *format, ...)
+{
+    va_list ap;
+    va_start(ap, format);
+    int result = vkprintf(format, ap);
+    va_end(ap);
 }
