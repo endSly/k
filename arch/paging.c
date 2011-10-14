@@ -12,16 +12,29 @@ static size_t memory_size;
 
 // Defined in linker.ld
 extern int kernel_end;
+uint32_t placement_address = (uint32_t) &kernel_end;
 
-static page_directory kernel_page_directory __attribute__ ((aligned (PAGE_SIZE)));
-static page_directory* current_page_directory = NULL;
+static page_directory* kernel_directory = NULL;
+static page_directory* current_directory = NULL;
 
-INLINE void set_page_usage(uint32_t page, BOOL usage)
+INLINE uint32_t simple_alloc(uint32_t sz, int align)
 {
+    if (align && (placement_address & 0xFFFFF000))
+        placement_address = (placement_address + 0x1000) & 0xFFFFF000;
+    
+    uint32_t tmp = placement_address;
+    placement_address += sz;
+    return tmp;
+}
+
+INLINE void set_frame(uint32_t frame_addr, bool usage)
+{
+    uint32_t frame = frame_addr / 0x1000;
+    // Set usage bit
     if (usage)
-        memory_map[page >> 5] |= 0x1 << (page % 32);
+        memory_map[frame >> 5] |= 0x1 << (frame % 32);
     else
-        memory_map[page >> 5] &= ~(0x1 << (page % 32));
+        memory_map[frame >> 5] &= ~(0x1 << (frame % 32));
 }
 
 INLINE size_t get_memsize(void)
@@ -30,110 +43,122 @@ INLINE size_t get_memsize(void)
     return 0x8000000;
 }
 
-INLINE void set_page_directory(page_directory* directory)
+INLINE void switch_page_directory(page_directory *dir)
 {
-    current_page_directory = directory;
-    __asm__ volatile("mov %0, %%cr3":: "r"(&directory->tables_physical));
-    
-    // Enable paging
-    dword_t cr0;
+    current_directory = dir;
+    __asm__ volatile("mov %0, %%cr3":: "r"(&dir->tablesPhysical));
+    uint32_t cr0;
     __asm__ volatile("mov %%cr0, %0": "=r"(cr0));
-    cr0 |= 0x80000000;
+    cr0 |= 0x80000000; // Enable paging!
     __asm__ volatile("mov %0, %%cr0":: "r"(cr0));
 }
 
-INLINE uint32_t get_free_page(void)
+page_entry* get_page(uint32_t address, int make, page_directory *dir)
 {
-    int32_t page = -1;
-    for (int i = 0; i < memory_map_size; i++) {
-        if (~memory_map[i]) { // Check if all pages are in use
-            uint32_t block = ~memory_map[i];
-            int page_in_block = 0;
-            
-            while (block & 0x1) { // Find first block
-                page++;
-                block >>= 1;
-            }
-            page = i << 5 + page_in_block;
-            
-            break;
+    // Turn the address into an index.
+    address /= 0x1000;
+    // Find the page table containing this address.
+    uint32_t table_idx = address / 1024;
+    
+    if (!dir->tables[table_idx]) {
+        // this table is already assigned
+        dir->tables[table_idx] = (page_table*)simple_alloc(sizeof(page_table), true); // We shouldn't simple_alloc here
+        dir->tablesPhysical[table_idx] = (uint32_t) dir->tables[table_idx] | 0x7; // PRESENT, RW, US.
+    }
+    return &dir->tables[table_idx]->pages[address % 1024];
+}
+
+static uint32_t get_free_frame(void)
+{
+    for (uint32_t i = 0; i < memory_map_size; i++) {
+        
+        if (memory_map[i] == 0xFFFFFFFF) // nothing free, exit early.
+            continue;
+        
+        // Find first free frame
+        uint32_t b = 1, n = 0;
+        while (memory_map[i] & b) {
+            b <<= 1;
+            n++;
         }
-    }
-    
-    if (page < 0) {
-        // Make it swap
-    }
-    return (uint32_t) page;
-}
-
-INLINE void alloc_page(page_entry* page, BOOL user, BOOL writable)
-{
-    if (!page->address)
-        return;     // Page allocated
-    
-    uint32_t free_page_index = get_free_page();
-    set_page_usage(free_page_index, TRUE);
-    
-    page->presence = 1;
-    page->rw = writable;
-    page->user = user;
-    page->address = free_page_index;
-}
-
-INLINE page_entry* get_page_entry(uint32_t page_index, page_directory* directory)
-{
-    uint32_t table_index = page_index / 1024;
-    
-    if (!directory->tables[table_index]) { // We need to alloc table
         
-        uint32_t table_page = get_free_page();
-        set_page_usage(table_page, TRUE);
-        
-        directory->tables[table_index] = (page_table*) (table_page << 12);
-        directory->tables_physical[table_index] = (table_page << 12) | 0x7;
+        return i * 32 + n;
     }
-    
-    return &(directory->tables[table_index][page_index % 1024]);
+    return 0;
 }
 
-static void page_fault(int none)
+void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
 {
+    if (page->frame != 0)
+        return;
     
+    uint32_t frame_index = get_free_frame();
+    if (!frame_index) {
+        // We have no frames availables
+        // Make swap...
+    }
+    set_frame(frame_index * 0x1000, true);
+    page->present = 1;
+    page->rw = writeable;
+    page->user_acc = user_accesible;
+    page->frame = frame_index;
+}
+
+void free_frame(page_entry *page)
+{
+    uint32_t frame;
+    if (frame = page->frame) {
+        set_frame(frame, false);
+        page->frame = 0x0;
+    }
 }
 
 void arch_init_paging(void)
 {
     memory_size = get_memsize();
     
-    // Set memory map at the top of the kernel
-    memory_map = (uint32_t*) &kernel_end;
-    // Set new kernel top
-    memory_map_size = memory_size / (PAGE_SIZE * sizeof (uint32_t)); // In words
-    uint32_t kernel_top = ((uint32_t) &kernel_end) + (memory_map_size * sizeof (uint32_t));
-    
-    if (kernel_top & 0xFFF) // kernel_top is not aligned
-        kernel_top = (kernel_top + 0x1000) & 0xFFFFF000;
-
-    // Clear memory map
+    // Alloc memory map
+    memory_map_size = memory_size / (PAGE_SIZE * sizeof(uint32_t));
+    memory_map = (uint32_t*)simple_alloc(memory_map_size, false);
     memset(memory_map, 0, memory_map_size);
-    for (int32_t kernel_page = (kernel_top >> 12) - 1
-         ; kernel_page >= 0
-         ; kernel_page--) {
-        set_page_usage(kernel_page, TRUE);
-    }
-
-    // Set pages used by kernel
-    for (int32_t kernel_page = (kernel_top >> 12) - 1
-         ; kernel_page >= 0
-         ; kernel_page--) {
-        alloc_page(get_page_entry(kernel_page, &kernel_page_directory), 0, 0);
-    }
-
-    // Set handler
-    interrupt_handlers[14] = &page_fault;
     
-    // Set page directory
-    //set_page_directory(&kernel_page_directory);
+    // Alloc a kernel page directory.
+    kernel_directory = (page_directory*)simple_alloc(sizeof(page_directory), true);
+    current_directory = kernel_directory;
+
+    // Declare all kernel pages
+    for (int i = 0; i < placement_address; i += 0x1000) {
+        alloc_frame(get_page(i, 1, kernel_directory), true, false);
+    }
+    
+    interrupt_handlers[14] = page_fault;
+
+    // Enable paging
+    switch_page_directory(kernel_directory);
 }
 
+void page_fault(int err_code, int int_no)
+{
+    // A page fault has occurred.
+    // The faulting address is stored in the CR2 register.
+    uint32_t faulting_address;
+    __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
+    
+    // The error code gives us details of what happened.
+    int present = !(err_code & 0x1); // Page not present
+    int rw = err_code & 0x2;           // Write operation?
+    int us = err_code & 0x4;           // Processor was in user-mode?
+    int reserved = err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
+    int id = err_code & 0x10;          // Caused by an instruction fetch?
 
+    // Output an error message.
+    kprintf("Page fault! ( ");
+    if (present) {kprintf("present ");}
+    if (rw) {kprintf("read-only ");}
+    if (us) {kprintf("user-mode ");}
+    if (reserved) {kprintf("reserved ");}
+    kprintf(") at 0x%X\n", faulting_address);
+    
+    panic("Page fault");
+    for (; ; ) { }
+}

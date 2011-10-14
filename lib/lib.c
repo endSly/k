@@ -32,3 +32,8 @@ void* memcpy(void* destination, const void* source, size_t num)
     }
     return destination;
 }
+
+void panic(const char *format, ...)
+{
+    puts(format);
+}

@@ -30,19 +30,26 @@ typedef long                int32_t;
 typedef short               int16_t;
 typedef char                int8_t;
 
-typedef char                BOOL;
 typedef unsigned int        size_t;
 
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
 
-#ifndef FALSE
-#define FALSE 0
+// c99's  stdbool.h
+
+typedef char bool;
+
+#ifndef false
+#define false (0)
 #endif
 
-#ifndef TRUE
-#define TRUE (!FALSE)
+#ifndef true
+#define true (1)
+#endif
+
+#ifndef __bool_true_false_are_defined
+#define __bool_true_false_are_defined 1
 #endif
 
 #endif // __TYPES_H__

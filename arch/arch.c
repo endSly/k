@@ -78,6 +78,7 @@ void arch_init(void)
     arch_init_gdt();
     arch_init_idt();
     arch_init_rtc(1000);
+    
     arch_init_paging();
     
 }
@@ -271,7 +272,7 @@ static void arch_init_rtc(long freq)
 void isr_handler(const isr_dump dump) 
 {
     if (interrupt_handlers[dump.int_no])
-        interrupt_handlers[dump.int_no](dump.err_code);
+        interrupt_handlers[dump.int_no](dump.err_code, dump.int_no);
 }
 
 void irq_handler(const isr_dump dump) 
@@ -284,5 +285,5 @@ void irq_handler(const isr_dump dump)
 
     
     if (interrupt_handlers[dump.int_no])
-        interrupt_handlers[dump.int_no](dump.err_code);
+        interrupt_handlers[dump.int_no](dump.err_code, dump.int_no);
 }

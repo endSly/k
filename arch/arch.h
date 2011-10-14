@@ -6,7 +6,7 @@
 #include "macros.h"
 #include "paging.h"
 
-typedef void (*interrupt_handler)(int err_code);
+typedef void (*interrupt_handler)(int err_code, int int_no);
 
 extern interrupt_handler interrupt_handlers[256];
 

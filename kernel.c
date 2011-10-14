@@ -5,7 +5,7 @@
 
 #define KERNEL_VERSION "0.0.1"
 
-void rtc_tick(int none)
+void rtc_tick(int none, int int_no)
 {
     static int ticks = 0;
     static char s = '0';
@@ -14,9 +14,9 @@ void rtc_tick(int none)
         kprintf("  Tick 0x%X!\n", ticks);
 }
 
-void int_handled(int none)
+void int_handled(int none, int int_no)
 {
-    kprintf("  Interrupt!\n");
+    kprintf("  Interrupt 0x%X %u!\n", none, int_no);
 }
 
 void kernel_main(void* mbd, unsigned int magic)
@@ -33,12 +33,17 @@ void kernel_main(void* mbd, unsigned int magic)
 
     arch_init();
 
-    for (int i = 0; i < 256; i++)
-        interrupt_handlers[i] = &int_handled;
+    //for (int i = 0; i < 256; i++) {
+        
+    //    interrupt_handlers[i] = &int_handled;
+    //}
 
     interrupt_handlers[32] = &rtc_tick;
 
     kprintf("Ok!\n");
+    
+    int *ptr = (int*)0xA0000000;
+    int do_page_fault = *ptr;
 
     for (; ; ) { }
 }
