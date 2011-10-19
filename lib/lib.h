@@ -13,5 +13,4 @@ void* memcpy(void* destination, const void* source, size_t num);
 
 void panic(const char *format, ...);
 
-
 #endif // __LIB_H__

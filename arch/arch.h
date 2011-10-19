@@ -2,9 +2,8 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
-#include "types.h"
 #include "macros.h"
-#include "paging.h"
+#include "types.h"
 
 typedef void (*interrupt_handler)(int err_code, int int_no);
 

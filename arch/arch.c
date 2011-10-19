@@ -1,7 +1,7 @@
 
-#include "macros.h"
+#include "arch/arch.h"
 
-#include "arch.h"
+#include "arch/paging.h"
 
 /*
  *  Arch specific types
@@ -28,19 +28,19 @@ typedef struct idt_entry_struct {
 } __attribute__((packed)) idt_entry;
 
 typedef struct {
-    dword_t	link;
-    dword_t	esp0, ss0;
-    dword_t	esp1, ss1;
-    dword_t	esp2, ss2;
-    dword_t	cr3;
-    dword_t	eip, eflags;
-    dword_t	eax, ecx, edx, ebx, esp, ebp, esi, edi;
-    dword_t	es, cs, ss, ds, fs, gs;
-    dword_t	ldt;
-    word_t	trace;
-    word_t	iopbm_offset;
-    byte_t	io_bitmap;
-    byte_t	stopper;
+    dword_t link;
+    dword_t esp0, ss0;
+    dword_t esp1, ss1;
+    dword_t esp2, ss2;
+    dword_t cr3;
+    dword_t eip, eflags;
+    dword_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
+    dword_t es, cs, ss, ds, fs, gs;
+    dword_t ldt;
+    word_t  trace;
+    word_t  iopbm_offset;
+    byte_t  io_bitmap;
+    byte_t  stopper;
 } __attribute__((packed)) tss;
 
 typedef struct {
@@ -78,9 +78,8 @@ void arch_init(void)
     arch_init_gdt();
     arch_init_idt();
     arch_init_rtc(1000);
-    
+
     arch_init_paging();
-    
 }
 
 /*
@@ -94,7 +93,7 @@ static void arch_init_gdt(void)
     arch_set_gdt_desc(1, 0, 0xFFFFFFFF, 0x9A, 0xCF); // Code
     arch_set_gdt_desc(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // Data
     arch_set_gdt_desc(3, (dword_t) &os_tss, sizeof(tss), 0x89, 0xCF); // TSS
-    
+
     // Load GDT
     struct table_ptr gdt_desc = {sizeof(gdt) - 1, (dword_t) gdt};
     gdt_flush((dword_t) &gdt_desc);
@@ -106,10 +105,10 @@ static void arch_set_gdt_desc(int index, dword_t base, dword_t limit, byte_t acc
     gdt[index].base_low = (base & 0xFFFF);
     gdt[index].base_middle = (base >> 16) & 0xFF;
     gdt[index].base_high = (base >> 24) & 0xFF;
-    
+
     gdt[index].limit_low = (limit & 0xFFFF);
     gdt[index].granularity = (limit >> 16) & 0x0F;
-    
+
     gdt[index].granularity |= gran & 0xF0;
     gdt[index].access = access;
 }
@@ -174,7 +173,7 @@ static void arch_init_idt(void)
     // Clear handlers
     for (int i = 0; i < 256; i++)
         interrupt_handlers[i] = NULL;
-    
+
     // Remap the irq table.
     outb(0x20, 0x11);
     outb(0xA0, 0x11);
@@ -186,7 +185,7 @@ static void arch_init_idt(void)
     outb(0xA1, 0x01);
     outb(0x21, 0x0);
     outb(0xA1, 0x0);
-    
+
     arch_set_idt_entry(0, (dword_t) &isr0, 0x08, 0x8E);
     arch_set_idt_entry(1, (dword_t) &isr1, 0x08, 0x8E);
     arch_set_idt_entry(2, (dword_t) &isr2, 0x08, 0x8E);
@@ -219,7 +218,7 @@ static void arch_init_idt(void)
     arch_set_idt_entry(29, (dword_t) &isr29, 0x08, 0x8E);
     arch_set_idt_entry(30, (dword_t) &isr30, 0x08, 0x8E);
     arch_set_idt_entry(31, (dword_t) &isr31, 0x08, 0x8E);
-    
+
     arch_set_idt_entry(32, (dword_t) &irq0, 0x08, 0x8E);
     arch_set_idt_entry(33, (dword_t) &irq1, 0x08, 0x8E);
     arch_set_idt_entry(34, (dword_t) &irq2, 0x08, 0x8E);
@@ -240,7 +239,7 @@ static void arch_init_idt(void)
     // Load IDT
     struct table_ptr idt_desc = {sizeof(idt) - 1, (dword_t)idt} ;
     idt_flush((dword_t) &idt_desc);
-    
+
     // Enable interrupts
     __asm__ volatile ("sti  \n");
 }
@@ -249,7 +248,7 @@ static void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags
 {
     idt[index].base_lo = base & 0xFFFF;
     idt[index].base_hi = (base >> 16) & 0xFFFF;
-    
+
     idt[index].sel = sel;
     idt[index].always0 = 0;
     // We must uncomment the OR below when we get to using user-mode.
@@ -260,7 +259,7 @@ static void arch_set_idt_entry(int index, dword_t base, word_t sel, byte_t flags
 static void arch_init_rtc(long freq)
 {
     word_t div = (word_t) (1193180 / freq);
-    
+
     // Send the command byte.
     outb(0x43, 0x36);
 
@@ -269,21 +268,21 @@ static void arch_init_rtc(long freq)
     outb(0x40, (byte_t)((div >> 8) & 0xFF));
 }
 
-void isr_handler(const isr_dump dump) 
+void isr_handler(const isr_dump dump)
 {
     if (interrupt_handlers[dump.int_no])
         interrupt_handlers[dump.int_no](dump.err_code, dump.int_no);
 }
 
-void irq_handler(const isr_dump dump) 
+void irq_handler(const isr_dump dump)
 {
     if (dump.int_no >= 40) // Send reset signal to slave.
         outb(0xA0, 0x20);
-    
+
     // Send reset signal to master. (As well as slave, if necessary).
     outb(0x20, 0x20);
 
-    
+
     if (interrupt_handlers[dump.int_no])
         interrupt_handlers[dump.int_no](dump.err_code, dump.int_no);
 }

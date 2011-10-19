@@ -1,12 +1,12 @@
 // paging.h -- Defines the interface for and structures relating to paging.
 //             Written for JamesM's kernel development tutorials.
 
-#ifndef PAGING_H
-#define PAGING_H
+#ifndef __PAGING_H__
+#define __PAGING_H__
+
+#include "types.h"
 
 #define PAGE_SIZE 4096
-
-#include "lib.h"
 
 typedef struct {
     unsigned present  : 1;
@@ -23,11 +23,11 @@ typedef struct {
 } page_table;
 
 typedef struct {
-    
+
     page_table* tables[1024];
-    
+
     uint32_t tablesPhysical[1024];
-    
+
     uint32_t physicalAddr;
 } page_directory;
 
@@ -36,4 +36,4 @@ void arch_init_paging(void);
 
 void page_fault(int err_code, int int_no);
 
-#endif
+#endif // __PAGING_H__
