@@ -13,13 +13,6 @@
 #define SCREEN_SIZE       (80 * 25)
 #define TAB_SIZE          8
 
-// Colors for the screen chars
-// 0:black, 1:blue, 2:green, 3:cyan, 4:red, 5:magenta, 6:brown,
-// 7:light grey, 8:dark grey, 9:light blue, a:light green,
-// b:light cyan, c:light red, d:light magneta, e: light brown, f: white.
-#define COLOR_ERRASE        ((0x07 << 8) | ' ')
-#define COLOR_GREY_ON_BLACK 0x07
-
 // VGA controller values
 #define VGA_CONTROL_PORT 0x3D4
 #define VGA_DATA_PORT    0x3D5
@@ -46,7 +39,7 @@ INLINE void scroll(void)
         video_buffer[i-SCREEN_CHARS_WIDE] = video_buffer[i];
 
     for (i -= SCREEN_CHARS_WIDE; i < SCREEN_SIZE; ++i)
-        video_buffer[i] = COLOR_ERRASE;
+        video_buffer[i] = COLOR_GREY_ON_BLACK << 8 | ' ';
 
     cursor_pos -= SCREEN_CHARS_WIDE;
 }
@@ -54,7 +47,7 @@ INLINE void scroll(void)
 // Write a char at the cursor's current position
 void arch_putc(uint8_t c)
 {
-    arch_putc_color(c, 0x07);
+    arch_putc_color(c, COLOR_GREY_ON_BLACK);
 }
 
 void arch_putc_color(uint8_t c, uint8_t color)
@@ -90,7 +83,7 @@ void arch_putc_color(uint8_t c, uint8_t color)
 void arch_cls(void)
 {
     for (int i = 0; i < SCREEN_SIZE; i++)
-        video_buffer[i] = COLOR_ERRASE;
+        video_buffer[i] = COLOR_GREY_ON_BLACK << 8 | ' ';
 
     cursor_pos = 0;
     update_cursor();

@@ -1,7 +1,8 @@
 
 #include "arch/arch.h"
 #include "arch/screen.h"
-#include "lib.h"
+#include "lib/kprintf.h"
+#include "lib/lib.h"
 
 #define KERNEL_VERSION "0.0.1"
 
@@ -22,6 +23,7 @@ void int_handled(int none, int int_no)
 void kernel_main(void* mbd, unsigned int magic)
 {
     if (magic != 0x2BADB002) {
+        // Something went not according to specs. Should halt
         puts("Unexpected magic!");
     }
 
@@ -34,14 +36,14 @@ void kernel_main(void* mbd, unsigned int magic)
     arch_init();
 
     //for (int i = 0; i < 256; i++) {
-        
+
     //    interrupt_handlers[i] = &int_handled;
     //}
 
     interrupt_handlers[32] = &rtc_tick;
 
     kprintf("Ok!\n");
-    
+
     int *ptr = (int*)0xA0000000;
     int do_page_fault = *ptr;
 

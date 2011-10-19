@@ -5,6 +5,7 @@
 #include "arch.h"
 #include "lib.h"
 #include "macros.h"
+#include "lib/kprintf.h"
 
 static uint32_t* memory_map = NULL;
 static uint32_t memory_map_size = 0;
@@ -21,7 +22,7 @@ INLINE uint32_t simple_alloc(uint32_t sz, int align)
 {
     if (align && (placement_address & 0xFFFFF000))
         placement_address = (placement_address + 0x1000) & 0xFFFFF000;
-    
+
     uint32_t tmp = placement_address;
     placement_address += sz;
     return tmp;
@@ -59,7 +60,7 @@ page_entry* get_page(uint32_t address, int make, page_directory *dir)
     address /= 0x1000;
     // Find the page table containing this address.
     uint32_t table_idx = address / 1024;
-    
+
     if (!dir->tables[table_idx]) {
         // this table is already assigned
         dir->tables[table_idx] = (page_table*)simple_alloc(sizeof(page_table), true); // We shouldn't simple_alloc here
@@ -71,17 +72,17 @@ page_entry* get_page(uint32_t address, int make, page_directory *dir)
 static uint32_t get_free_frame(void)
 {
     for (uint32_t i = 0; i < memory_map_size; i++) {
-        
+
         if (memory_map[i] == 0xFFFFFFFF) // nothing free, exit early.
             continue;
-        
+
         // Find first free frame
         uint32_t b = 1, n = 0;
         while (memory_map[i] & b) {
             b <<= 1;
             n++;
         }
-        
+
         return i * 32 + n;
     }
     return 0;
@@ -91,7 +92,7 @@ void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
 {
     if (page->frame != 0)
         return;
-    
+
     uint32_t frame_index = get_free_frame();
     if (!frame_index) {
         // We have no frames availables
@@ -116,12 +117,12 @@ void free_frame(page_entry *page)
 void arch_init_paging(void)
 {
     memory_size = get_memsize();
-    
+
     // Alloc memory map
     memory_map_size = memory_size / (PAGE_SIZE * sizeof(uint32_t));
     memory_map = (uint32_t*)simple_alloc(memory_map_size, false);
     memset(memory_map, 0, memory_map_size);
-    
+
     // Alloc a kernel page directory.
     kernel_directory = (page_directory*)simple_alloc(sizeof(page_directory), true);
     current_directory = kernel_directory;
@@ -130,7 +131,7 @@ void arch_init_paging(void)
     for (int i = 0; i < placement_address; i += 0x1000) {
         alloc_frame(get_page(i, 1, kernel_directory), true, false);
     }
-    
+
     interrupt_handlers[14] = page_fault;
 
     // Enable paging
@@ -143,7 +144,7 @@ void page_fault(int err_code, int int_no)
     // The faulting address is stored in the CR2 register.
     uint32_t faulting_address;
     __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
-    
+
     // The error code gives us details of what happened.
     int present = !(err_code & 0x1); // Page not present
     int rw = err_code & 0x2;           // Write operation?
@@ -158,7 +159,7 @@ void page_fault(int err_code, int int_no)
     if (us) {kprintf("user-mode ");}
     if (reserved) {kprintf("reserved ");}
     kprintf(") at 0x%X\n", faulting_address);
-    
+
     panic("Page fault");
     for (; ; ) { }
 }

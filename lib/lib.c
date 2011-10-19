@@ -1,4 +1,4 @@
-#include "lib.h"
+#include "lib/lib.h"
 
 #include "arch/screen.h"
 
@@ -11,12 +11,12 @@ int puts(const char* str)
     return l;
 }
 
-void* memset(void* ptr, int value, size_t num)
+void* memset(void* ptr, uint8_t value, size_t num)
 {
     uint8_t* d = ptr;
     while (num--) {
         *d = value;
-        d++;
+        ++d;
     }
     return ptr;
 }
@@ -27,8 +27,8 @@ void* memcpy(void* destination, const void* source, size_t num)
     const uint8_t* s = source;
     while (num--) {
         *d = *s;
-        d++;
-        s++;
+        ++d;
+        ++s;
     }
     return destination;
 }
