@@ -45,25 +45,21 @@ INLINE void scroll(void)
 }
 
 // Write a char at the cursor's current position
-void arch_putc(uint8_t c)
-{
-    arch_putc_color(c, COLOR_GREY_ON_BLACK);
-}
-
 void arch_putc_color(uint8_t c, uint8_t color)
 {
     switch (c) {
         case '\n':
-            while (++cursor_pos % SCREEN_CHARS_WIDE);
+            while (cursor_pos % SCREEN_CHARS_WIDE)
+                video_buffer[cursor_pos++] = (color << 8) | ' ';
             break;
         case '\r':
             do {
-                video_buffer[cursor_pos] = (color << 8);
+                video_buffer[cursor_pos] = (color << 8) | ' ';
             } while (--cursor_pos % SCREEN_CHARS_WIDE);
             break;
         case '\b':
             if (cursor_pos)
-                video_buffer[cursor_pos--] = (color << 8);
+                video_buffer[cursor_pos--] = (color << 8) | ' ';
             break;
         case '\t':
             while (++cursor_pos % TAB_SIZE);

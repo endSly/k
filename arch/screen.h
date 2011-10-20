@@ -2,6 +2,7 @@
 #ifndef __SCREEN_H__
 #define __SCREEN_H__
 
+#include "macros.h"
 #include "types.h"
 
 // Colors for the screen chars
@@ -11,8 +12,10 @@
 #define COLOR_GREY_ON_BLACK 0x07
 
 // Write a char at the cursor's current position
-void arch_putc(uint8_t c);
 void arch_putc_color(uint8_t c, uint8_t color);
+INLINE void arch_putc(uint8_t c) {
+    arch_putc_color(c, COLOR_GREY_ON_BLACK);
+}
 
 // Clear the screen and set the cursor to the top-left position
 void arch_cls(void);
