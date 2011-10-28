@@ -1,16 +1,15 @@
 
 #include "kprintf.h"
 
-#include "stdarg.h"
 #include "types.h"
 #include "arch/screen.h"
 
-static void kprint_int(int32_t i, int base, bool uppercase)
+static void kprint_int(int32_t i, int base, bool uppercase, uint8_t color)
 {
     uint32_t divisor = 1;
     
     if (i < 0 && base == 10) {
-        arch_putc('-');
+        arch_putc_color('-', color);
         i = -i;
     }
     
@@ -22,11 +21,9 @@ static void kprint_int(int32_t i, int base, bool uppercase)
         int char_value = i / divisor;
         
         if (char_value < 10) {
-            arch_putc('0' + char_value);
-        } else if (uppercase) {
-            arch_putc('A' + char_value - 10);
+            arch_putc_color('0' + char_value, color);
         } else {
-            arch_putc('a' + char_value - 10);
+            arch_putc_color(uppercase ? 'A' : 'a' + char_value - 10, color);
         }
         
         i = i % divisor;
@@ -40,8 +37,16 @@ static void kprint_float(double f)
     
 }
 
-static int vkprintf(const char* format, va_list vl) 
+int vkprintf(const char* format, va_list vl) 
 {
+    uint8_t color = SCREEN_COLOR(BLACK, L_GREY);
+    
+    // Read color from parameters
+    if (format[0] == '%' && format[1] == '$') {
+        format += 2;
+        color = va_arg(vl, char);
+    }
+    
     int chars = 0;
     for (const char* s = format; *s; s++) {
         if (*s == '%') {
@@ -53,38 +58,38 @@ static int vkprintf(const char* format, va_list vl)
             switch (*s++) {
                 case 'c': { // Char
                     char c = va_arg(vl, char);
-                    arch_putc(c);
+                    arch_putc_color(c, color);
                     break;
                 }
                 case 's': { // String
                     const char* str = va_arg(vl, const char*);
                     for (; *str; str++)
-                        arch_putc(*str);
+                        arch_putc_color(*str, color);
                     break;
                 }
                 case 'd': { // Decimal
                     int d = va_arg(vl, int);
-                    kprint_int(d, 10, false);
+                    kprint_int(d, 10, false, color);
                     break;
                 }
                 case 'o': { // Octal
                     int d = va_arg(vl, int);
-                    kprint_int(d, 8, false);
+                    kprint_int(d, 8, false, color);
                     break;
                 }
                 case 'x': { // Hex
                     int d = va_arg(vl, int);
-                    kprint_int(d, 16, false);
+                    kprint_int(d, 16, false, color);
                     break;
                 }
                 case 'X': { // Hex uppercase
                     int d = va_arg(vl, int);
-                    kprint_int(d, 16, true);
+                    kprint_int(d, 16, true, color);
                     break;
                 }
                 case 'u': { // Unsigned
                     unsigned int d = va_arg(vl, unsigned int);
-                    kprint_int(d, 10, true);
+                    kprint_int(d, 10, true, color);
                     break;
                 }
                 default: // Do nothing
@@ -94,7 +99,7 @@ static int vkprintf(const char* format, va_list vl)
                 
         }
         chars++;
-        arch_putc(*s);
+        arch_putc_color(*s, color);
     }
     return chars;
 }

@@ -46,14 +46,14 @@ INLINE size_t get_memsize(void)
 INLINE void switch_page_directory(page_directory *dir)
 {
     current_directory = dir;
-    __asm__ volatile("mov %0, %%cr3":: "r"(&dir->tablesPhysical));
+    __asm__ volatile("mov %0, %%cr3":: "r"(&dir->tables_physical));
     uint32_t cr0;
     __asm__ volatile("mov %%cr0, %0": "=r"(cr0));
     cr0 |= 0x80000000; // Enable paging!
     __asm__ volatile("mov %0, %%cr0":: "r"(cr0));
 }
 
-page_entry* get_page(uint32_t address, int make, page_directory *dir)
+page_entry* get_page(uint32_t address, page_directory *dir)
 {
     // Turn the address into an index.
     address /= 0x1000;
@@ -61,9 +61,9 @@ page_entry* get_page(uint32_t address, int make, page_directory *dir)
     uint32_t table_idx = address / 1024;
     
     if (!dir->tables[table_idx]) {
-        // this table is already assigned
+        // this table does not exists
         dir->tables[table_idx] = (page_table*)simple_alloc(sizeof(page_table), true); // We shouldn't simple_alloc here
-        dir->tablesPhysical[table_idx] = (uint32_t) dir->tables[table_idx] | 0x7; // PRESENT, RW, US.
+        dir->tables_physical[table_idx] = (uint32_t) dir->tables[table_idx] | 0x7; // PRESENT, RW, US.
     }
     return &dir->tables[table_idx]->pages[address % 1024];
 }
@@ -73,7 +73,7 @@ static uint32_t get_free_frame(void)
     for (uint32_t i = 0; i < memory_map_size; i++) {
         
         if (memory_map[i] == 0xFFFFFFFF) // nothing free, exit early.
-            continue;
+            panic("No memory available");
         
         // Find first free frame
         uint32_t b = 1, n = 0;
@@ -87,7 +87,7 @@ static uint32_t get_free_frame(void)
     return 0;
 }
 
-void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
+static void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
 {
     if (page->frame != 0)
         return;
@@ -104,13 +104,74 @@ void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
     page->frame = frame_index;
 }
 
-void free_frame(page_entry *page)
+static void free_frame(page_entry *page)
 {
     uint32_t frame;
     if (frame = page->frame) {
         set_frame(frame, false);
         page->frame = 0x0;
     }
+}
+
+static void page_fault(int err_code, int int_no)
+{
+    // A page fault has occurred.
+    // The faulting address is stored in the CR2 register.
+    uint32_t faulting_address;
+    __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
+    
+    // The error code gives us details of what happened.
+    int present = !(err_code & 0x1); // Page not present
+    int rw = err_code & 0x2;           // Write operation?
+    int us = err_code & 0x4;           // Processor was in user-mode?
+    int reserved = err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
+    int id = err_code & 0x10;          // Caused by an instruction fetch?
+    
+    // Output an error message.
+    kprintf("Page fault! ( ");
+    if (present) {kprintf("present ");}
+    if (rw) {kprintf("read-only ");}
+    if (us) {kprintf("user-mode ");}
+    if (reserved) {kprintf("reserved ");}
+    kprintf(") at 0x%X\n", faulting_address);
+    
+    panic("Page fault");
+    for (; ; ) { }
+}
+
+void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable)
+{
+    int free_page_index;
+    bool free_page_found = false;
+    
+    // Find free consecutive pages to alloc
+    size_t free_pages_count = 0;
+    for (int table_index = 0; table_index < 1024 && !free_page_found; table_index++) {
+        
+        page_table* table = current_directory->tables[table_index];
+        if (!table)
+            table = get_page(table_index * 1024 * 0x1000, current_directory);  // table does not exists
+        
+        for (int page_index = 0; page_index < 1024 && !free_page_found; page_index++) {
+            if (table->pages[page_index].frame)
+                free_pages_count = 0;   // Not free page
+            else 
+                free_pages_count++;     // free page
+            
+            free_page_index = table_index * 1024 + page_index + 1 - free_pages_count;
+            free_page_found = true;
+            break;
+        }
+    }
+    if (!free_page_found)
+        return NULL;
+    
+    for (int i = free_page_index; i < (free_page_index + pages_count); i++) {
+        alloc_frame(&(current_directory->tables[free_page_index / 1024]->pages[free_page_index % 1024]),
+                    user_accesible,
+                    writeable);
+    }
+    return (void *) (free_page_index * 0x1000); // get the address of page
 }
 
 void arch_init_paging(void)
@@ -128,37 +189,11 @@ void arch_init_paging(void)
 
     // Declare all kernel pages
     for (int i = 0; i < placement_address; i += 0x1000) {
-        alloc_frame(get_page(i, 1, kernel_directory), true, false);
+        alloc_frame(get_page(i, kernel_directory), true, false);
     }
     
     interrupt_handlers[14] = page_fault;
 
     // Enable paging
     switch_page_directory(kernel_directory);
-}
-
-void page_fault(int err_code, int int_no)
-{
-    // A page fault has occurred.
-    // The faulting address is stored in the CR2 register.
-    uint32_t faulting_address;
-    __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
-    
-    // The error code gives us details of what happened.
-    int present = !(err_code & 0x1); // Page not present
-    int rw = err_code & 0x2;           // Write operation?
-    int us = err_code & 0x4;           // Processor was in user-mode?
-    int reserved = err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
-    int id = err_code & 0x10;          // Caused by an instruction fetch?
-
-    // Output an error message.
-    kprintf("Page fault! ( ");
-    if (present) {kprintf("present ");}
-    if (rw) {kprintf("read-only ");}
-    if (us) {kprintf("user-mode ");}
-    if (reserved) {kprintf("reserved ");}
-    kprintf(") at 0x%X\n", faulting_address);
-    
-    panic("Page fault");
-    for (; ; ) { }
 }

@@ -12,7 +12,7 @@ int puts(const char* str);
 void* memset(void* ptr, int value, size_t num);
 void* memcpy(void* destination, const void* source, size_t num);
 
-void panic(const char *format, ...);
+void panic(const char *msg);
 
 
 #endif // __LIB_H__
