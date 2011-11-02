@@ -37,4 +37,5 @@ void* memcpy(void* destination, const void* source, size_t num)
 void panic(const char *msg)
 {
     kprintf("%$Panic: %s\n", SCREEN_COLOR(RED, WHITE), msg);
+    for (; ; ) { }
 }

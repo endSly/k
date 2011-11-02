@@ -122,22 +122,22 @@ static void page_fault(int err_code, int int_no)
     __asm__ volatile("mov %%cr2, %0" : "=r" (faulting_address));
 
     // The error code gives us details of what happened.
-    int present = !(err_code & 0x1); // Page not present
-    int rw = err_code & 0x2;           // Write operation?
-    int us = err_code & 0x4;           // Processor was in user-mode?
-    int reserved = err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
-    int id = err_code & 0x10;          // Caused by an instruction fetch?
+    bool present = !(err_code & 0x1);   // Page not present
+    bool read_only = err_code & 0x2;    // Write operation?
+    bool user_mode = err_code & 0x4;    // Processor was in user-mode?
+    bool reserved = err_code & 0x8;     // Overwritten CPU-reserved bits of page entry?
+    bool fetch = err_code & 0x10;       // Caused by an instruction fetch?
 
     // Output an error message.
-    kprintf("Page fault! ( ");
-    if (present) {kprintf("present ");}
-    if (rw) {kprintf("read-only ");}
-    if (us) {kprintf("user-mode ");}
-    if (reserved) {kprintf("reserved ");}
-    kprintf(") at 0x%X\n", faulting_address);
+    kprintf("Page fault! (%s, %s, %s, %s, %s) at 0x%X\n", 
+            present ? "present" : "not present",
+            read_only ? "read-only" : "read-write",
+            user_mode ? "user-mode" : "supervisor-mode",
+            reserved ? "reserved" : "not reserved",
+            fetch ? "code-fetch" : "data-fetch",
+            faulting_address);
 
     panic("Page fault");
-    for (; ; ) { }
 }
 
 void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable)
