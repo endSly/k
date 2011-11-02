@@ -7,6 +7,7 @@ OBJS    := kernel.o \
     arch/paging.o \
     arch/screen.o \
     lib/lib.o \
+    lib/memory.o \
     lib/kprintf.o
 
 CC      := gcc
