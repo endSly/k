@@ -16,7 +16,7 @@
  */
  
 
-typedef stuct {
+typedef struct {
     size_t size;
     bool used;
 } mem_block;
