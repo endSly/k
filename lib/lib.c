@@ -1,3 +1,4 @@
+#include "lib/kprintf.h"
 #include "lib/lib.h"
 
 #include "arch/screen.h"
@@ -33,7 +34,7 @@ void* memcpy(void* destination, const void* source, size_t num)
     return destination;
 }
 
-void panic(const char *format, ...)
+void panic(const char *msg)
 {
-    puts(format);
+    kprintf("%$Panic: %s\n", SCREEN_COLOR(RED, WHITE), msg);
 }
