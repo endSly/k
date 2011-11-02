@@ -74,7 +74,7 @@ static uint32_t get_free_frame(void)
     for (uint32_t i = 0; i < memory_map_size; i++) {
 
         if (memory_map[i] == 0xFFFFFFFF) // nothing free, exit early.
-            panic("No memory available");
+            continue;
 
         // Find first free frame
         uint32_t b = 1, n = 0;
@@ -85,7 +85,8 @@ static uint32_t get_free_frame(void)
 
         return i * 32 + n;
     }
-    return 0;
+    panic("No memory available");
+    return 0; // Avoid warnings
 }
 
 static void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
