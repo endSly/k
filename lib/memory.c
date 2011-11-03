@@ -68,7 +68,7 @@ void* kmalloc(size_t size)
     
     if (smallest_block->size > (size + sizeof(mem_block))) {
         // We have space for split it
-        memblock* new_block = ((void*) smallest_block) + size + sizeof(mem_block);
+        mem_block* new_block = ((void*) smallest_block) + size + sizeof(mem_block);
         new_block->size = smallest_block->size - size - sizeof(mem_block);
         new_block->used = false;
         new_block->magic = MAGIC;
@@ -76,8 +76,8 @@ void* kmalloc(size_t size)
         smallest_block->size = size;
         
         // Insert new block
-        memblock* prev_block = NULL;
-        memblock* block = free_blocks_list;
+        mem_block* prev_block = NULL;
+        mem_block* block = free_blocks_list;
         while (block && block->size > new_block->size) {
             prev_block = block;
             block = block->next;

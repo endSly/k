@@ -31,8 +31,8 @@ void kernel_main(void* mbd, unsigned int magic)
 
     arch_cls();
 
-    kprintf("\n  Welcome to k. Version: %s", KERNEL_VERSION);
-    kprintf("\n--------------------------------\n"
+    kprintf("\n  Welcome to k. Version: %s\n", KERNEL_VERSION);
+    kprintf("--------------------------------\n"
             "Initializing System...");
 
     arch_init();
