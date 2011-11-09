@@ -2,6 +2,7 @@
 #include "memory.h"
 
 #include "lib/lib.h"
+#include "lib/kprintf.h"
 #include "arch/paging.h"
 
 /*  Simple alloc algorithm
@@ -32,6 +33,12 @@ static mem_block* free_blocks_list = NULL;
 void* kmalloc(size_t size)
 {
     if (!free_blocks_list || free_blocks_list->size < size) {
+        
+        kprintf("** free_blocks_list: ");
+        for (mem_block* b = free_blocks_list; b; b = b->next)
+            kprintf("%u(%X) ", b->size, b);
+        kprintf("\n");
+        
         // We have no hole for alloc this space. Alloc enough pages for size and it's block definition
         size_t pages_count = 1 + (size + sizeof(mem_block) - 1) / PAGE_SIZE;
         void* alloc_space = arch_alloc_pages(pages_count, true, true);
@@ -47,6 +54,11 @@ void* kmalloc(size_t size)
         free_blocks_list = new_block;
     }
     
+    kprintf("*- free_blocks_list: ");
+    for (mem_block* b = free_blocks_list; b; b = b->next)
+        kprintf("%u(%X) ", b->size, b);
+    kprintf("\n");
+    
     // Find smallest block to fit it
     mem_block* prev_smallest_block = NULL;
     mem_block* smallest_block = free_blocks_list;
@@ -56,6 +68,8 @@ void* kmalloc(size_t size)
         prev_smallest_block = smallest_block;
         smallest_block = smallest_block->next;
     }
+    
+    kprintf("** smallest_block: %X size: %d\n", smallest_block, smallest_block->size);
     
     kassert(smallest_block && smallest_block->size >= (size + sizeof(mem_block)));
     kassert(smallest_block->magic == MAGIC);

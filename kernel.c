@@ -38,7 +38,6 @@ void kernel_main(void* mbd, unsigned int magic)
     arch_init();
 
     //for (int i = 0; i < 256; i++) {
-
     //    interrupt_handlers[i] = &int_handled;
     //}
 
@@ -55,8 +54,7 @@ void kernel_main(void* mbd, unsigned int magic)
     kfree(b);
     int* b1 = kmalloc(5);
     int* b2 = kmalloc(5);
-    int* d = kmalloc(50);
-    kprintf("a: 0x%X, b1:0x%X, b2:0x%X, c:0x%X, d:0x%X\n", a, b1, b2, c, d);
+    kprintf("a: 0x%X, b1:0x%X, b2:0x%X, c:0x%X\n", a, b1, b2, c);
 
     int *ptr = (int*)0xA0000000;
     int do_page_fault = *ptr;
