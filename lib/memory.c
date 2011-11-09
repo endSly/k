@@ -48,11 +48,6 @@ void* kmalloc(size_t size)
         free_blocks_list = new_block;
     }
     
-    kprintf("*- free_blocks_list: ");
-    for (mem_block* b = free_blocks_list; b; b = b->next)
-        kprintf("%u(%X),", b->size, b);
-    kprintf("\n");
-    
     // Find smallest block to fit it
     mem_block* prev_smallest_block = NULL;
     mem_block* smallest_block = free_blocks_list;
@@ -82,9 +77,9 @@ void* kmalloc(size_t size)
         smallest_block->size = size;
         
         // Insert new block
-        mem_block* prev_block = NULL;
-        mem_block* block = free_blocks_list;
         if (free_blocks_list) {
+            mem_block* prev_block = NULL;
+            mem_block* block = free_blocks_list;
             while (block && block->size > new_block->size) {
                 prev_block = block;
                 block = block->next;
@@ -95,14 +90,7 @@ void* kmalloc(size_t size)
             free_blocks_list = new_block;
         }
     }
-    
-    kprintf("*- free_blocks_list: ");
-    for (mem_block* b = free_blocks_list; b; b = b->next)
-        kprintf("%u(%X),", b->size, b);
-    kprintf("\n");
-    
-    kprintf("** smallest_block: %X size: %d\n", smallest_block, smallest_block->size);
-    
+
     return ((void*) smallest_block) + sizeof(mem_block);
 }
 
@@ -132,12 +120,49 @@ void* krealloc(void* ptr, size_t size)
 
 void kfree(void* ptr)
 {
-    if (ptr) {
-        // Free block
-        mem_block* block = (mem_block*) (ptr - sizeof(mem_block));
-        block->used = false;
-        
-        ptr += block->size;
-        mem_block* next_block = (mem_block*) ptr;
+    if (!ptr)
+        return;
+    
+    // Free block
+    mem_block* new_block = (mem_block*) (ptr - sizeof(mem_block));
+    new_block->used = false;
+    
+    if (new_block->magic != MAGIC) {
+        // Error!!
+        kprintf("kfree error! Unexpected magic.");
+        return;
     }
+    
+    // Check if next block is a hole
+    ptr += new_block->size;
+    mem_block* next_block = (mem_block*) ptr;
+    if (!next_block->used) {
+        new_block->size += next_block->size + sizeof(mem_block);
+        
+        mem_block* prev_block = NULL;
+        mem_block* block = free_blocks_list;
+        while (block != next_block) {
+            prev_block = block;
+            block = block->next;
+        }
+        // Unlink block
+        if (prev_block)
+            prev_block->next = block->next;
+        
+    }
+    
+    // Insert free block into list
+    if (free_blocks_list) {
+        mem_block* prev_block = NULL;
+        mem_block* block = free_blocks_list;
+        while (block && block->size > new_block->size) {
+            prev_block = block;
+            block = block->next;
+        }
+        prev_block->next = new_block;
+        new_block->next = block;
+    } else {
+        free_blocks_list = new_block;
+    }
+    
 }
