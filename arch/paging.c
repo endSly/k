@@ -3,6 +3,7 @@
 #include "paging.h"
 
 #include "arch.h"
+#include "arch/screen.h"
 #include "lib.h"
 #include "macros.h"
 #include "lib/kprintf.h"
@@ -130,7 +131,7 @@ static void page_fault(int err_code, int int_no)
     bool fetch = err_code & 0x10;       // Caused by an instruction fetch?
 
     // Output an error message.
-    kprintf("Page fault! (%s, %s, %s, %s, %s) at 0x%X\n", 
+    kprintf("%$Page fault! (%s, %s, %s, %s, %s) at 0x%X\n", SCREEN_COLOR(RED, WHITE),
             present ? "present" : "not present",
             read_only ? "read-only" : "read-write",
             user_mode ? "user-mode" : "supervisor-mode",
