@@ -2,10 +2,10 @@
 
 #include "paging.h"
 
-#include "arch.h"
-#include "arch/screen.h"
-#include "lib.h"
 #include "macros.h"
+#include "arch.h"
+#include "screen.h"
+#include "lib/lib.h"
 #include "lib/kprintf.h"
 
 static uint32_t* memory_map = NULL;
