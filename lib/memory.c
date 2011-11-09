@@ -84,12 +84,16 @@ void* kmalloc(size_t size)
         // Insert new block
         mem_block* prev_block = NULL;
         mem_block* block = free_blocks_list;
-        while (block && block->size > new_block->size) {
-            prev_block = block;
-            block = block->next;
+        if (free_blocks_list) {
+            while (block && block->size > new_block->size) {
+                prev_block = block;
+                block = block->next;
+            }
+            prev_block->next = new_block;
+            new_block->next = block;
+        } else {
+            free_blocks_list = new_block;
         }
-        prev_block->next = new_block;
-        new_block->next = block;
     }
     
     kprintf("*- free_blocks_list: ");
