@@ -154,7 +154,9 @@ void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable)
         if (!table)
             table = get_page(table_index * 1024 * 0x1000, current_directory);  // table does not exists
 
-        for (int page_index = 0; page_index < 1024 && !free_page_found; page_index++) {
+        for (int page_index = table_index ? 0 : 1 // 0x0 is used for represent null
+             ; page_index < 1024 && !free_page_found
+             ; page_index++) {
             if (table->pages[page_index].frame)
                 free_pages_count = 0;   // Not free page
             else
