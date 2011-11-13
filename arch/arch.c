@@ -19,29 +19,13 @@ typedef struct {
     byte_t b[8];
 } __attribute__((packed)) ldt_desc;
 
-typedef struct idt_entry_struct {
+typedef struct {
     word_t base_lo;
     word_t sel;
     byte_t always0;
     byte_t flags;
     word_t base_hi;
 } __attribute__((packed)) idt_entry;
-
-typedef struct {
-    dword_t link;
-    dword_t esp0, ss0;
-    dword_t esp1, ss1;
-    dword_t esp2, ss2;
-    dword_t cr3;
-    dword_t eip, eflags;
-    dword_t eax, ecx, edx, ebx, esp, ebp, esi, edi;
-    dword_t es, cs, ss, ds, fs, gs;
-    dword_t ldt;
-    word_t  trace;
-    word_t  iopbm_offset;
-    byte_t  io_bitmap;
-    byte_t  stopper;
-} __attribute__((packed)) tss;
 
 typedef struct {
     dword_t ds;
@@ -69,8 +53,6 @@ idt_entry idt[256] __attribute__ ((aligned (4)));
 
 interrupt_handler interrupt_handlers[256] __attribute__ ((aligned (4)));
 
-tss os_tss __attribute__ ((aligned (4)));
-
 struct table_ptr { word_t limit; dword_t base; } __attribute__((packed));
 
 void arch_init(void)
@@ -92,7 +74,7 @@ static void arch_init_gdt(void)
     arch_set_gdt_desc(0, 0, 0, 0, 0); // Set null selector
     arch_set_gdt_desc(1, 0, 0xFFFFFFFF, 0x9A, 0xCF); // Code
     arch_set_gdt_desc(2, 0, 0xFFFFFFFF, 0x92, 0xCF); // Data
-    arch_set_gdt_desc(3, (dword_t) &os_tss, sizeof(tss), 0x89, 0xCF); // TSS
+    //arch_set_gdt_desc(3, (dword_t) &os_tss, sizeof(tss), 0x89, 0xCF); // TSS
 
     // Load GDT
     struct table_ptr gdt_desc = {sizeof(gdt) - 1, (dword_t) gdt};
@@ -237,7 +219,7 @@ static void arch_init_idt(void)
     arch_set_idt_entry(47, (dword_t) &irq15, 0x08, 0x8E);
 
     // Load IDT
-    struct table_ptr idt_desc = {sizeof(idt) - 1, (dword_t)idt} ;
+    struct table_ptr idt_desc = {sizeof(idt) - 1, (dword_t)idt};
     idt_flush((dword_t) &idt_desc);
 
     // Enable interrupts
@@ -272,6 +254,8 @@ void isr_handler(const isr_dump dump)
 {
     if (interrupt_handlers[dump.int_no])
         interrupt_handlers[dump.int_no](dump.err_code, dump.int_no);
+    // else
+    //     Unhandled interrupt
 }
 
 void irq_handler(const isr_dump dump)
@@ -285,4 +269,6 @@ void irq_handler(const isr_dump dump)
 
     if (interrupt_handlers[dump.int_no])
         interrupt_handlers[dump.int_no](dump.err_code, dump.int_no);
+    // else
+    //     Unhandled interrupt
 }
