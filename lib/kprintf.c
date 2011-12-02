@@ -46,7 +46,7 @@ void vkprintf(const char* format, va_list vl)
         if (*s == '%') {
             s++;
 
-            switch (*s++) {
+            switch (*s) {
                 case 'c': { // Char
                     char c = va_arg(vl, char);
                     arch_putc_color(c, color);
@@ -96,8 +96,9 @@ void vkprintf(const char* format, va_list vl)
 
             }
 
+        } else {
+            arch_putc_color(*s, color);
         }
-        arch_putc_color(*s, color);
     }
 }
 
