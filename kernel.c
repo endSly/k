@@ -31,7 +31,7 @@ void kernel_main(void* mbd, unsigned int magic)
 
     arch_cls();
 
-    kprintf("\n  Welcome to k. Version: %s\n", KERNEL_VERSION);
+    kprintf("\n  Welcome to %$k%$. Version: %$%s\n", SCREEN_COLOR(BLACK, GREEN), SCREEN_COLOR(BLACK, L_GREY), SCREEN_COLOR(BLACK, RED), KERNEL_VERSION);
     kprintf("--------------------------------\n"
             "Initializing System...");
 
@@ -44,13 +44,13 @@ void kernel_main(void* mbd, unsigned int magic)
     interrupt_handlers[32] = &rtc_tick;
 
     kprintf("Ok!\n");
-    
+
     // malloc test
     int* a = kmalloc(10);
     int* b = kmalloc(20);
     int* c = kmalloc(30);
     kprintf("a: 0x%X, b:0x%X, c:0x%X\n", a, b, c);
-    
+
     kfree(b);
     int* b1 = kmalloc(5);
     int* b2 = kmalloc(5);
