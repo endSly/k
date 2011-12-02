@@ -1,11 +1,11 @@
 // For more information http://www.jamesmolloy.co.uk/tutorial_html/3.-The%20Screen.html
 
-#include "screen.h"
+#include "arch/screen.h"
 
-#include "arch.h"
+#include "arch/arch.h"
 
 // Position of the framebuffer in RAM
-#define DIR_FRAMEBUFFER 0xb8000
+#define DIR_FRAMEBUFFER 0xB8000
 
 // Screen values
 #define SCREEN_CHARS_WIDE 80
@@ -19,7 +19,7 @@
 #define VGA_CONTROL_HIGH 14
 #define VGA_CONTROL_LOW  15
 
-word_t* const video_buffer = (word_t *) DIR_FRAMEBUFFER;
+word_t* const video_buffer = (word_t*) DIR_FRAMEBUFFER;
 uint16_t cursor_pos = 0;
 
 INLINE void update_cursor(void)
@@ -34,12 +34,14 @@ INLINE void update_cursor(void)
 
 INLINE void scroll(void)
 {
+    // Move all lines one row up
     int i = SCREEN_CHARS_WIDE;
     for (; i < SCREEN_SIZE; ++i)
         video_buffer[i-SCREEN_CHARS_WIDE] = video_buffer[i];
 
+    // Erase the last line
     for (i -= SCREEN_CHARS_WIDE; i < SCREEN_SIZE; ++i)
-        video_buffer[i] = COLOR_GREY_ON_BLACK << 8 | ' ';
+        video_buffer[i] = SCREEN_COLOR(BLACK, L_GREY) << 8 | ' ';
 
     cursor_pos -= SCREEN_CHARS_WIDE;
 }
@@ -62,7 +64,9 @@ void arch_putc_color(uint8_t c, uint8_t color)
                 video_buffer[cursor_pos--] = (color << 8) | ' ';
             break;
         case '\t':
-            while (++cursor_pos % TAB_SIZE);
+            do {
+                video_buffer[cursor_pos++] = (color << 8) | ' ';
+            } while (cursor_pos % TAB_SIZE);
             break;
         default:
             video_buffer[cursor_pos++] = (color << 8) | c;
@@ -79,7 +83,7 @@ void arch_putc_color(uint8_t c, uint8_t color)
 void arch_cls(void)
 {
     for (int i = 0; i < SCREEN_SIZE; i++)
-        video_buffer[i] = COLOR_GREY_ON_BLACK << 8 | ' ';
+        video_buffer[i] = SCREEN_COLOR(BLACK, L_GREY) << 8 | ' ';
 
     cursor_pos = 0;
     update_cursor();
