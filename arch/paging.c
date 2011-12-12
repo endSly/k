@@ -49,7 +49,7 @@ INLINE size_t get_memsize(void)
 INLINE void switch_page_directory(page_directory *dir)
 {
     current_directory = dir;
-    __asm__ volatile("mov %0, %%cr3":: "r"(&dir->tables_physical));
+    __asm__ volatile("mov %0, %%cr3":: "r"(dir->physical_addr));
     uint32_t cr0;
     __asm__ volatile("mov %%cr0, %0": "=r"(cr0));
     cr0 |= 0x80000000; // Enable paging!
