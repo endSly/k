@@ -13,7 +13,7 @@ typedef struct task_t {
 } task;
 
 void initialise_tasking();
-void task_switch();
+void switch_task();
 int fork();
 
 // Causes the current process' stack to be forcibly moved to a new location.
