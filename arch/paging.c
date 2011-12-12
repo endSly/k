@@ -16,7 +16,7 @@ static size_t memory_size;
 extern int kernel_end;
 uint32_t placement_address = (uint32_t) &kernel_end;
 
-static page_directory* kernel_directory = NULL;
+page_directory* kernel_directory = NULL;
 static page_directory* current_directory = NULL;
 
 INLINE uint32_t simple_alloc(uint32_t sz, int align)
@@ -90,7 +90,7 @@ static uint32_t get_free_frame(void)
     return 0; // Avoid warnings
 }
 
-static void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
+void alloc_frame(page_entry *page, bool user_accesible, bool writeable)
 {
     if (page->frame != 0)
         return;

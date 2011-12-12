@@ -4,8 +4,10 @@ OBJS    := kernel.o \
     arch/loader.o \
     arch/x86.o \
     arch/arch.o \
+    arch/process.o \
     arch/paging.o \
     arch/screen.o \
+    arch/multitask.o \
     lib/lib.o \
     lib/memory.o \
     lib/kprintf.o

@@ -23,17 +23,19 @@ typedef struct {
 typedef struct {
     // Pointers To tables
     page_table* tables[1024];
-    
+
     // Tables physical address
     uint32_t tables_physical[1024];
-    
+
     // tables_physical physical address
     uint32_t physical_addr;
 } page_directory;
 
+extern page_directory* kernel_directory;
 
 void arch_init_paging(void);
 
+void alloc_frame(page_entry *page, bool user_accesible, bool writeable);
 void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable);
 
 #endif // __PAGING_H__
