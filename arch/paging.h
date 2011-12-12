@@ -41,4 +41,6 @@ page_entry* get_page(uint32_t address, page_directory *dir);
 void alloc_frame(page_entry *page, bool user_accesible, bool writeable);
 void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable);
 
+page_directory* clone_directory(page_directory *src);
+
 #endif // __PAGING_H__
