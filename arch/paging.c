@@ -3,10 +3,11 @@
 #include "paging.h"
 
 #include "macros.h"
-#include "arch.h"
-#include "screen.h"
-#include "lib/lib.h"
+#include "arch/arch.h"
+#include "arch/multitask.h"
+#include "arch/screen.h"
 #include "lib/kprintf.h"
+#include "lib/lib.h"
 
 static uint32_t* memory_map = NULL;
 static uint32_t memory_map_size = 0;
@@ -190,7 +191,7 @@ void arch_init_paging(void)
 
     // Alloc a kernel page directory.
     kernel_directory = (page_directory*)simple_alloc(sizeof(page_directory), true);
-    current_directory = kernel_directory;
+    kernel_directory->physical_addr = (uint32_t)kernel_directory->tables_physical;
 
     // Declare all kernel pages
     for (int i = 0; i < placement_address; i += 0x1000) {
@@ -201,4 +202,7 @@ void arch_init_paging(void)
 
     // Enable paging
     switch_page_directory(kernel_directory);
+
+    current_directory = clone_directory(kernel_directory);
+    switch_page_directory(current_directory);
 }

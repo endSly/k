@@ -1,4 +1,5 @@
-#include "arch/paging.h"
+#include "arch/multitask.h"
+
 #include "lib/lib.h"
 #include "lib/memory.h"
 
