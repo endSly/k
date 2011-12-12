@@ -1,4 +1,4 @@
-global copy_page_physical
+global copy_page_physical, read_eip
 
 copy_page_physical:
     push ebx              ; According to __cdecl, we must preserve the contents of EBX.
@@ -30,3 +30,7 @@ copy_page_physical:
     popf                  ; Pop EFLAGS back.
     pop ebx               ; Get the original value of EBX back.
     ret
+
+read_eip:
+  pop eax
+  jmp eax
