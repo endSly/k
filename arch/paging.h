@@ -32,8 +32,11 @@ typedef struct {
 } page_directory;
 
 extern page_directory* kernel_directory;
+extern page_directory* current_directory;
 
 void arch_init_paging(void);
+
+page_entry* get_page(uint32_t address, page_directory *dir);
 
 void alloc_frame(page_entry *page, bool user_accesible, bool writeable);
 void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable);

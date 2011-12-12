@@ -18,7 +18,7 @@ extern int kernel_end;
 uint32_t placement_address = (uint32_t) &kernel_end;
 
 page_directory* kernel_directory = NULL;
-static page_directory* current_directory = NULL;
+page_directory* current_directory = NULL;
 
 INLINE uint32_t simple_alloc(uint32_t sz, int align)
 {

@@ -23,7 +23,8 @@ GDTSIZE   equ 0x10000                 ; that's 64k.
 LDTSIZE   equ 0x10000                 ; that's 64k.
 
 loader:
-    mov esp, stack+STACKSIZE          ; set up the stack
+    ;mov esp, stack+STACKSIZE          ; set up the stack
+    push esp
     push eax                          ; pass Multiboot magic number
     push ebx                          ; pass Multiboot info structure
     cli

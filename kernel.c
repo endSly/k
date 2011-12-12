@@ -7,6 +7,8 @@
 
 #define KERNEL_VERSION "0.0.1"
 
+uint32_t initial_esp;
+
 void rtc_tick(int none, int int_no)
 {
     static int ticks = 0;
@@ -21,13 +23,15 @@ void int_handled(int none, int int_no)
     kprintf("  Interrupt 0x%X %u!\n", none, int_no);
 }
 
-void kernel_main(void* mbd, unsigned int magic)
+void kernel_main(void* mbd, unsigned int magic, uint32_t initial_stack)
 {
     if (magic != 0x2BADB002) {
         // Something went not according to specs. Should halt
         arch_cls();
         panic("Unexpected magic!");
     }
+
+    initial_esp = initial_stack;
 
     arch_cls();
 
