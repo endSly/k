@@ -30,8 +30,8 @@ void __assert(const char* file, int line, const char* expr)
     kprintf("%$Assertion failed!: \"%s\", file:%s, line:%u\n", SCREEN_COLOR(RED, WHITE), expr, file, line);
 }
 
-void panic(const char *msg)
+void panic(const char *msg, const char *file, const int line)
 {
-    kprintf("%$Panic: %s\n", SCREEN_COLOR(RED, WHITE), msg);
+    kprintf("%$Panic: %s %s:%i\n", SCREEN_COLOR(RED, WHITE), msg, file, line);
     for (; ; ) { }
 }

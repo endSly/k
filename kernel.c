@@ -28,7 +28,7 @@ void kernel_main(void* mbd, unsigned int magic, uint32_t initial_stack)
     if (magic != 0x2BADB002) {
         // Something went not according to specs. Should halt
         arch_cls();
-        panic("Unexpected magic!");
+        PANIC("Unexpected magic!");
     }
 
     initial_esp = initial_stack;

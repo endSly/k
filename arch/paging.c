@@ -92,7 +92,7 @@ static uint32_t get_free_frame(void)
 
         return i * 32 + n;
     }
-    panic("No memory available");
+    PANIC("No memory available");
     return 0; // Avoid warnings
 }
 
@@ -145,7 +145,7 @@ static void page_fault(int err_code, int int_no)
             fetch ? "code-fetch" : "data-fetch",
             faulting_address);
 
-    panic("Page fault");
+    PANIC("Page fault");
 }
 
 void* arch_alloc_pages(size_t pages_count, bool user_accesible, bool writeable)
