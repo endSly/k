@@ -3,341 +3,222 @@
 \usepackage[T1]{fontenc}
 \usepackage{graphicx}
 \usepackage{listings}
+\usepackage{url}
 \lstloadlanguages{[ANSI]C}
 \usepackage{color}
 
-\lstset{ %
-language=[ANSI]C,                		% the language of the code
+\lstset{
+language=[ANSI]C,               % the language of the code
 basicstyle=\footnotesize,       % the size of the fonts that are used for the code
-                % how far the line-numbers are from the code
+numbers=left,                   % where to put the line-numbers
+numberstyle=\footnotesize,      % the size of the fonts that are used for the line-numbers
+stepnumber=1,                   % the step between two line-numbers. If it's 1, each line will be numbered
+numbersep=5pt,                  % how far the line-numbers are from the code
 backgroundcolor=\color{white},  % choose the background color. You must add \usepackage{color}
 showspaces=false,               % show spaces adding particular underscores
 showstringspaces=false,         % underline spaces within strings
 showtabs=false,                 % show tabs within strings adding particular underscores
-frame=lines,                   % adds a frame around the code
+frame=single,                   % adds a frame around the code
 tabsize=2,                      % sets default tabsize to 2 spaces
-captionpos=b,                   % sets the caption-position to bottom
+captionpos=t,                   % sets the caption-position to bottom
 breaklines=true,                % sets automatic line breaking
 breakatwhitespace=false,        % sets if automatic breaks should only happen at whitespace
-title=\lstname,                 % show the filename of files included with \lstinputlisting;
-                                % also try caption instead of title
-escapeinside={\%*}{*)},         % if you want to add a comment within your code
-morekeywords={*,...}            % if you want to add more keywords to the set
+title=\lstname,                 % show the filename of files included with \lstinputlisting; also try caption instead of title
+%escapeinside={\%*}{*)},        % if you want to add a comment within your code
+%morekeywords={*,...}           % if you want to add more keywords to the set
 }
 
 
 \begin{document}
-\title{Kernel para la arquitectura IA32}
+\title{\textit{Kernel} para la arquitectura \textit{IA32}}
 \author{Endika Guti\'errez Salas, Jon Ander Pe\~nalba y David G\'omez Hern\'andez}
 \maketitle
 
 \tableofcontents
 
+\chapter{Introducci\'on}
+
+El objetivo de este trabajo es crear un \textit{kernel} para la arquitectura \textit{IA32} que cargaremos en una m\'aquina virtual.
+Para arrancar el kernel necesitaremos adem\'as un gestor de arranque, para lo que utilizaremos \textit{GRUB}\footnote{\textit{GRUB} - \url{http://www.gnu.org/software/grub/}}.
+
+La mayor parte del kernel est\'a escrita en \textit{C}, pero hay partes que es necesario hacer en ensamblador.
+Una de estas partes es el c\'odigo de arranque, que est\'a en el fichero \textit{arch/loader.s}.
+Este c\'odigo lleva a cabo algunas operaciones necesarias para poder cargar el \textit{kernel} y despu\'es llama a nuestra funci\'on principal (\textit{kernel\textunderscore main}).
+
+\lstinputlisting[language={[x86masm]Assembler}]{../arch/loader.s}
+
 \chapter{La Pantalla}
 
-Ahora que tenemos un "kernel" que puede ejecutarse y entrar en un bucle infinito es hora de conseguir que algo interesante aparezca en la pantalla. Junto a la E/S en serie, el monitor ser\'a el aliado m\'as importante en la batalla de la depuraci\'on
+Una vez tenemos un \textit{kernel} que puede ejecutarse hay que usar alg\'un perif\'erico de salida para mostrar lo que est\'a haciendo.
+Como este \textit{kernel} es muy b\'asico, usamos el perif\'erico de salida m\'as sencillo, la pantalla en modo texto.
 
 \section{La Teor\'ia}
 
-Tu kernel se inicia con GRUB en modo texto. Esto quiere decir que tiene disponible un framebuffer (\'area de memoria) que controla una pantalla de caracteres (no pixels) de 80 de ancho por 25 de alto. Este ser\'a el modo en que el kernel operar\'a hasta que se entre en el mundo de VESA.
+El \textit{kernel} se inicia con \textit{GRUB} en modo texto.
+Esto quiere decir que tiene disponible un \textit{framebuffer} (\'area de memoria) que controla una pantalla de caracteres de 80 de ancho por 25 de alto.
+Este ser\'a el modo en que el \textit{kernel} operar\'a.
 
-El \'area de memoria conocida como framebuffer es accesible como una RAM normal, en la direcci\'on 0xB8000. Es importante dejar claro que a pesar de esto no es una RAM normal. Es parte de la memoria dedicada de video del controlador VGA a la que se le ha realizado un mapeo de memoria v\'ia hardware al espacio lineal de direcciones. Es una diferencia importante.
-El framebuffer es un array de palabras de 16 bits, cada valor de 16 bits representando el display de un car\'acter. La compensaci\'on del comienzo de framebuffer de la palabra que especifica la el car\'acter en la posici\'on x, y es:
+El \textit{framebuffer} es accesible como \textit{RAM} normal, en la direcci\'on \textit{0xB8000}.
+Pero es importante dejar claro que a pesar de esto no es \textit{RAM} normal, es parte de la memoria de v\'ideo dedicada del controlador
+\textit{VGA} a la que se le ha realizado un mapeo de memoria v\'ia hardware al espacio lineal de direcciones. Es una diferencia importante.
+El \textit{framebuffer} es un array de palabras de 16 \textit{bits}, cada valor de 16 \textit{bits} representando un car\'acter.
 
-(y * 80 + x) * 2
-
-Es importante remarcar que el ‘*2’ est\'a ah\'i \'unicamente porque cada elemento es de 2 bytes (16 bits). Si est\'as indexando un array de valores de 16 bits, por ejemplo, el \'indice ser\'ia de y * 80 + x.
-
-En ASCII (no se soporta el Unicode en modo texto) se usan 8 bits para representar el car\'{a}cter. Eso nos da 8 bits de m\'as que no se usan. El hardware VGA usa estos bits para designar los colores de primer plano y de fondo (4 bits cada). La divisi\'on de este valor de 16 bits se muestra en el diagrama.
+En \textit{ASCII} (no se soporta el \textit{Unicode} en modo texto) solo se usan 8 \textit{bits} para representar el car\'acter,
+as\'i que disponemos de 8 \textit{bits} extra que el controlador \textit{VGA} usa para designar los colores del texto y del fondo (4 \textit{bits} cada uno).
+La divisi\'on de este valor de 16 \textit{bits} queda entonces como se muestra en la figura \ref{fig:vga_word}.
 
 \begin{figure}[htb]
 \centering
-\includegraphics[scale=0.5]{word_format.png}
+\includegraphics[scale=0.7]{word_format.png}
+\caption{Elemento del array de v\'ideo}
+\label{fig:vga_word}
 \end{figure}
 
-
-4 bits para un c\'odigo de color nos dan 15 posibles colores para mostrar:
-
-0: negro, 1: azul, 2: verde, 3: cian, 4: rojo, 5: magenta, 6: marr\'on, 7: gris claro, 8: gris oscuro, 9: azul claro, 10: verde claro, 11: cian claro, 12: rojo claro, 13: magenta claro, 14: marr\'on claro, 15: blanco.
-
- 
-El controlador VGA tiene tambi\'en algunos puertos en el bus principal de E/S, que se puede usar para enviar instrucciones espec\'ificas. Entre otros, tiene un registro de control en 0x3D4 y un registro de datos en 0x3D5. Estos se usaran para dar instrucciones al controlador para actualizar la posici\'on del cursor.
+El controlador \textit{VGA} tiene tambi\'en algunos puertos en el \textit{bus} principal de \textit{E/S}, que se puede usar para enviar instrucciones espec\'ificas.
+Los m\'as importantes para nosotros son el registro de control en \textit{0x3D4} y el registro de datos en \textit{0x3D5},
+mediante los cuales podemos actualizar la posici\'on del cursor.
 
 \section{La Pr\'actica}
-\subsection{Lo primero es lo primero}
-En primer lugar, necesitamos unas cuantas funciones globales com\'unmente usadas. common.c y common.h incluyen funciones para escribir y leer del bus de E/S y algunos typedef que facilitar\'an la escritura de c\'odigo portable. Son tambi\'en el lugar ideal para poner funciones como memcpy/memset etc. 
+\subsection{C\'odigo de la pantalla}
 
-\begin{lstlisting}
-// common.h -- Defines typedefs and some global functions.
-// From JamesM's kernel development tutorials.
+Acontinuaci\'on se muestra la cabecera del c\'odigo de pantalla.
 
-#ifndef COMMON_H
-#define COMMON_H
+\lstinputlisting{../arch/screen.h}
 
-// Some nice typedefs, to standardise sizes across platforms.
-// These typedefs are written for 32-bit X86.
-typedef unsigned int   u32int;
-typedef          int   s32int;
-typedef unsigned short u16int;
-typedef          short s16int;
-typedef unsigned char  u8int;
-typedef          char  s8int;
+Como se puede ver es muy sencillo, solo define dos funciones (una para escribir un car\'acter y la otra para borrar la pantalla) y unas \textit{macros} para definir los colores.
 
-void outb(u16int port, u8int value);
-u8int inb(u16int port);
-u16int inw(u16int port);
+Internamente este c\'odigo hace solamente lo m\'as b\'asico.
+Imprime los caracteres uno a uno y va actualizando la posici\'on del cursor teniendo en cuenta que algunos caracteres especiales como el salto de l\'inea necesitan un trato especial.
 
-#endif
--------------------
-// common.c -- Defines some global functions.
-// From JamesM's kernel development tutorials.
-
-#include "common.h"
-
-// Write a byte out to the specified port.
-void outb(u16int port, u8int value)
+\begin{lstlisting}[title=Funci\'on que escribe un car\'acter en pantalla]
+// Write a char at the cursor's current position
+void arch_putc_color(uint8_t c, uint8_t color)
 {
-    asm volatile ("outb %1, %0" : : "dN" (port), "a" (value));
-}
+    switch (c) {
+        case '\n':
+            while (cursor_pos % SCREEN_CHARS_WIDE)
+                video_buffer[cursor_pos++] = (color << 8) | ' ';
+            break;
+        case '\r':
+            do {
+                video_buffer[cursor_pos] = (color << 8) | ' ';
+            } while (--cursor_pos % SCREEN_CHARS_WIDE);
+            break;
+        case '\b':
+            if (cursor_pos)
+                video_buffer[cursor_pos--] = (color << 8) | ' ';
+            break;
+        case '\t':
+            do {
+                video_buffer[cursor_pos++] = (color << 8) | ' ';
+            } while (cursor_pos % TAB_SIZE);
+            break;
+        default:
+            video_buffer[cursor_pos++] = (color << 8) | c;
+            break;
+    }
 
-u8int inb(u16int port)
-{
-   u8int ret;
-   asm volatile("inb %1, %0" : "=a" (ret) : "dN" (port));
-   return ret;
-}
+    if (cursor_pos >= SCREEN_SIZE)
+        scroll();
 
-u16int inw(u16int port)
-{
-   u16int ret;
-   asm volatile ("inw %1, %0" : "=a" (ret) : "dN" (port));
-   return ret;
-}
-
-\end{lstlisting}
-
-\subsection{El c\'odigo del monitor}
-
-\begin{lstlisting}
-// monitor.h -- Defines the interface for monitor.h
-// From JamesM's kernel development tutorials.
-
-#ifndef MONITOR_H
-#define MONITOR_H
-
-#include "common.h"
-
-// Write a single character out to the screen.
-void monitor_put(char c);
-
-// Clear the screen to all black.
-void monitor_clear();
-
-// Output a null-terminated ASCII string to the monitor.
-void monitor_write(char *c);
-
-#endif // MONITOR_H
-
-\end{lstlisting}
-
-\subsubsection{Moviendo el cursor}
-Para mover el cursor hardware  debemos calcular en primer lugar la compensaci\'{o}n de la coordenada x,y del cursor. Esto se hace usando la ecuaci\'{o}n de arriba. Despu\'{e}s, debemos enviar esta compensaci\'{o}n al controlador VGA. Por alguna raz\'{o}n acepta la localizaci\'{o}n de 16 bits como 2 bytes. Se enviamos al puerto de comando del controlador (0x3D4) el comando 14 para decirle que se est\'{a} enviando el byte alto, despu\'{e}s se env\'{i}a ese byte al puerto 0x3D5. Se repite despu\'{e}s con el byte bajo, solo que esta vez se env\'{i}a en comando 15.
-
-\begin{lstlisting}
-// Updates the hardware cursor.
-static void move_cursor()
-{
-   // The screen is 80 characters wide...
-   u16int cursorLocation = cursor_y * 80 + cursor_x;
-   outb(0x3D4, 14);                  // Tell the VGA board we are setting the high cursor byte.
-   outb(0x3D5, cursorLocation >> 8); // Send the high cursor byte.
-   outb(0x3D4, 15);                  // Tell the VGA board we are setting the low cursor byte.
-   outb(0x3D5, cursorLocation);      // Send the low cursor byte.
+    update_cursor();
 }
 \end{lstlisting}
 
-\subsubsection{Hacer scroll en la pantalla}
-En alg\'{u}n momento la pantalla se acabar\'{a} llenando de texto. Estar\'{i}a bien que, llegado ese momento, la pantalla actuase como un terminal e hiciese scroll hac\'{i}a arriba una l\'{i}nea. Esto no es muy dif\'{i}cil de hacer.
+Para borrar la pantalla simplemente recorre todo el \textit{buffer} de v\'ideo, lo llena de espacios y posteriormente pone el cursor en la primera posici\'on.
+Y si al escribir un car\'acter llega al final del \textit{buffer}, recorre todas las lineas desde la segunda copiándolas a la l\'inea anterior y luego borra la ultima l\'inea.
 
-\begin{lstlisting}
-// Scrolls the text on the screen up by one line.
-static void scroll()
+\begin{lstlisting}[title=Funci\'on que hace \textit{scroll}]
+INLINE void scroll(void)
 {
+    // Move all lines one row up
+    int i = SCREEN_CHARS_WIDE;
+    for (; i < SCREEN_SIZE; ++i)
+        video_buffer[i-SCREEN_CHARS_WIDE] = video_buffer[i];
 
-   // Get a space character with the default colour attributes.
-   u8int attributeByte = (0 /*black*/ << 4) | (15 /*white*/ & 0x0F);
-   u16int blank = 0x20 /* space */ | (attributeByte << 8);
+    // Erase the last line
+    for (i -= SCREEN_CHARS_WIDE; i < SCREEN_SIZE; ++i)
+        video_buffer[i] = SCREEN_COLOR(BLACK, L_GREY) << 8 | ' ';
 
-   // Row 25 is the end, this means we need to scroll up
-   if(cursor_y >= 25)
-   {
-       // Move the current text chunk that makes up the screen
-       // back in the buffer by a line
-       int i;
-       for (i = 0*80; i < 24*80; i++)
-       {
-           video_memory[i] = video_memory[i+80];
-       }
-
-       // The last line should now be blank. Do this by writing
-       // 80 spaces to it.
-       for (i = 24*80; i < 25*80; i++)
-       {
-           video_memory[i] = blank;
-       }
-       // The cursor should now be on the last line.
-       cursor_y = 24;
-   }
+    cursor_pos -= SCREEN_CHARS_WIDE;
 }
 \end{lstlisting}
 
-\subsubsection{Escribir un car\'{a}cter en la pantalla}
+\subsection{\textit{kprintf}}
 
-Ahora el c\'{o}digo se vuelve algo m\'{a}s complicado. Pero si se le echa un vistazo se ve que mucho de \'{e}l es l\'{o}gico.
+De momento el código es suficiente para escribir por pantalla, pero lo realmente \'util es disponer de algo parecido al \textit{printf} de \textit{C}.
+As\'i que hemos definido nuestro propio \textit{printf} para el \textit{kernel}.
 
-\begin{lstlisting}
-// Writes a single character out to the screen.
-void monitor_put(char c)
+\lstinputlisting{../lib/kprintf.h}
+
+Este c\'odigo lo que hace es primero extraer todos los par\'ametros que se le han pasado a la funci\'on y despu\'es mostrarlos en el formato deseado.
+
+\begin{lstlisting}[title=Funci\'on que imprime una cadena de caracteres]
+void vkprintf(const char* format, va_list vl)
 {
-   // The background colour is black (0), the foreground is white (15).
-   u8int backColour = 0;
-   u8int foreColour = 15;
+    uint8_t color = SCREEN_COLOR(BLACK, L_GREY);
 
-   // The attribute byte is made up of two nibbles - the lower being the
-   // foreground colour, and the upper the background colour.
-   u8int  attributeByte = (backColour << 4) | (foreColour & 0x0F);
-   // The attribute byte is the top 8 bits of the word we have to send to the
-   // VGA board.
-   u16int attribute = attributeByte << 8;
-   u16int *location;
+    for (const char *s = format; *s; s++) {
+        if (*s == '%') {
+            s++;
 
-   // Handle a backspace, by moving the cursor back one space
-   if (c == 0x08 && cursor_x)
-   {
-       cursor_x--;
-   }
+            switch (*s) {
+                case 'c': { // Character
+                    char c = va_arg(vl, char);
+                    arch_putc_color(c, color);
+                    break;
+                }
+                case 's': { // String
+                    const char* str = va_arg(vl, const char*);
+                    for (; *str; ++str)
+                        arch_putc_color(*str, color);
+                    break;
+                }
+                case 'd': // Signed decimal integer
+                case 'i': {
+                    int d = va_arg(vl, int);
+                    kprint_int(d, 10, false, color);
+                    break;
+                }
+                case 'u': { // Unsigned decimal integer
+                    unsigned int d = va_arg(vl, unsigned int);
+                    kprint_int(d, 10, true, color);
+                    break;
+                }
+                case 'o': { // Unsigned octal
+                    int d = va_arg(vl, int);
+                    kprint_int(d, 8, false, color);
+                    break;
+                }
+                case 'x': { // Unsigned hexadecimal integer
+                    int d = va_arg(vl, int);
+                    kprint_int(d, 16, false, color);
+                    break;
+                }
+                case 'X': { // Unsigned hexadecimal integer (capital letters)
+                    int d = va_arg(vl, int);
+                    kprint_int(d, 16, true, color);
+                    break;
+                }
+                case '$': // Change color
+                    color = va_arg(vl, char);
+                    break;
+                case '%': // %
+                    arch_putc_color('%', color);
+                    break;
+                default: // Do nothing
+                    break;
 
-   // Handle a tab by increasing the cursor's X, but only to a point
-   // where it is divisible by 8.
-   else if (c == 0x09)
-   {
-       cursor_x = (cursor_x+8) & ~(8-1);
-   }
+            }
 
-   // Handle carriage return
-   else if (c == '\r')
-   {
-       cursor_x = 0;
-   }
-
-   // Handle newline by moving cursor back to left and increasing the row
-   else if (c == '\n')
-   {
-       cursor_x = 0;
-       cursor_y++;
-   }
-   // Handle any other printable character.
-   else if(c >= ' ')
-   {
-       location = video_memory + (cursor_y*80 + cursor_x);
-       *location = c | attribute;
-       cursor_x++;
-   }
-
-   // Check if we need to insert a new line because we have reached the end
-   // of the screen.
-   if (cursor_x >= 80)
-   {
-       cursor_x = 0;
-       cursor_y ++;
-   }
-
-   // Scroll the screen if needed.
-   scroll();
-   // Move the hardware cursor.
-   move_cursor();
+        } else {
+            arch_putc_color(*s, color);
+        }
+    }
 }
 \end{lstlisting}
 
-Es bastante simple. El bit que se encarga de la escritura est\'{a} aqu\'{i}.
 
-\begin{lstlisting}
-location = video_memory + (cursor_y*80 + cursor_x);
-*location = c | attribute;
-\end{lstlisting}
-
-Hacer que ‘location’ apunte a la direcci\'{o}n lineal de la palabra correspondiente a la posici\'{o}n actual del cursor (mirar ecuaci\'{o}n arriba)
-
-Hacer que el valor de ‘location’ sea la OR l\'{o}gica del car\'{a}cter y ‘attribute’. Hay que recordar que se han elevado los 8 bits de la izquierda de ‘attribute’ hacia arriba, as\'{i} que se est\'{a} haciendo que ‘c’ sea el byte m\'{a}s bajo de ‘attribute’.
-
-\subsubsection{Despejando la pantalla}
-
-Despejar la pantalla es tambi\'{e}n sumamente f\'{a}cil. Simplemente se llena con un mont\'{o}n de espacios:
-
-\begin{lstlisting}
-// Clears the screen, by copying lots of spaces to the framebuffer.
-void monitor_clear()
-{
-   // Make an attribute byte for the default colours
-   u8int attributeByte = (0 /*black*/ << 4) | (15 /*white*/ & 0x0F);
-   u16int blank = 0x20 /* space */ | (attributeByte << 8);
-
-   int i;
-   for (i = 0; i < 80*25; i++)
-   {
-       video_memory[i] = blank;
-   }
-
-   // Move the hardware cursor back to the start.
-   cursor_x = 0;
-   cursor_y = 0;
-   move_cursor();
-}
-\end{lstlisting}
-
-\subsubsection{Escribir un string}
-
-\begin{lstlisting}
-// Outputs a null-terminated ASCII string to the monitor.
-void monitor_write(char *c)
-{
-   int i = 0;
-   while (c[i])
-   {
-       monitor_put(c[i++]);
-   }
-}
-\end{lstlisting}
-
-\section{Resumen}
-
-Si se junta todo el c\'{o}digo, se pueden añadir un par de l\'{i}neas en el main.c
-
-\begin{lstlisting}
-monitor_clear();
-monitor_write("Hello, world!");
-\end{lstlisting}
-
-De este modo conseguimos un la funci\'{o}n de salida de texto. 
-
-\section{Extensiones}
-A parte de la implementaci\'{o}n de memcpy/memset/strlen/strcmp etc, hay una cuantas funciones m\'{a}s que facilitaran mucho las cosas
-
-\begin{lstlisting}
-void monitor_write_hex(u32int n)
-{
-   // TODO: implement this yourself!
-}
-
-void monitor_write_dec(u32int n)
-{
-   // TODO: implement this yourself!
-}
-\end{lstlisting}
-
-Los nombres de las funciones se explican por s\'{i} mismos – escribir en hexadecimal va a ser necesario si se va a comprobar la validez de los punteros. Decimal es opcional pero est\'{a} bien ver algo en base 10 de vez en cuando.
-
-Se puede tambi\'{e}n echar una ojeada al c\'{o}digo de linux0.1 – que tiene una implementaci\'{o}n de vsprintf que es bastante limpia y ordenada. Se puede copiar esa funci\'{o}n y despu\'{e}s usarla para implementar printf(), lo que har\'{a} las cosas m\'{a}s sencillas cuando haya que depurar.
 
 \chapter{La GDT y la IDT}
 
