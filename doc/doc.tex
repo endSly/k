@@ -4,6 +4,8 @@
 \usepackage{graphicx}
 \usepackage{listings}
 \usepackage{url}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
 \lstloadlanguages{[ANSI]C}
 \usepackage{color}
 
@@ -31,66 +33,66 @@ title=\lstname,                 % show the filename of files included with \lsti
 
 \begin{document}
 \title{\textit{Kernel} para la arquitectura \textit{IA32}}
-\author{Endika Guti\'errez Salas, Jon Ander Pe\~nalba y David G\'omez Hern\'andez}
+\author{Endika Gutierrez Salas, Jon Ander Peñalba y David Gómez Hernández}
 \maketitle
 
 \tableofcontents
 
-\chapter{Introducci\'on}
+\chapter{Introducción}
 
-El objetivo de este trabajo es crear un \textit{kernel} para la arquitectura \textit{IA32} que cargaremos en una m\'aquina virtual.
-Para arrancar el kernel necesitaremos adem\'as un gestor de arranque, para lo que utilizaremos \textit{GRUB}\footnote{\textit{GRUB} - \url{http://www.gnu.org/software/grub/}}.
+El objetivo de este trabajo es crear un \textit{kernel} para la arquitectura \textit{IA32} que cargaremos en una máquina virtual.
+Para arrancar el kernel necesitaremos además un gestor de arranque, para lo que utilizaremos \textit{GRUB}\footnote{\textit{GRUB} - \url{http://www.gnu.org/software/grub/}}.
 
-La mayor parte del kernel est\'a escrita en \textit{C}, pero hay partes que es necesario hacer en ensamblador.
-Una de estas partes es el c\'odigo de arranque, que est\'a en el fichero \textit{arch/loader.s}.
-Este c\'odigo lleva a cabo algunas operaciones necesarias para poder cargar el \textit{kernel} y despu\'es llama a nuestra funci\'on principal (\textit{kernel\textunderscore main}).
+La mayor parte del kernel está escrita en \textit{C}, pero hay partes que es necesario hacer en ensamblador.
+Una de estas partes es el código de arranque, que está en el fichero \textit{arch/loader.s}.
+Este código lleva a cabo algunas operaciones necesarias para poder cargar el \textit{kernel} y después llama a nuestra función principal (\textit{kernel\_main}).
 
 \lstinputlisting[language={[x86masm]Assembler}]{../arch/loader.s}
 
 \chapter{La Pantalla}
 
-Una vez tenemos un \textit{kernel} que puede ejecutarse hay que usar alg\'un perif\'erico de salida para mostrar lo que est\'a haciendo.
-Como este \textit{kernel} es muy b\'asico, usamos el perif\'erico de salida m\'as sencillo, la pantalla en modo texto.
+Una vez tenemos un \textit{kernel} que puede ejecutarse hay que usar algún periférico de salida para mostrar lo que está haciendo.
+Como este \textit{kernel} es muy básico, usamos el periférico de salida más sencillo, la pantalla en modo texto.
 
-\section{La Teor\'ia}
+\section{La Teoría}
 
 El \textit{kernel} se inicia con \textit{GRUB} en modo texto.
-Esto quiere decir que tiene disponible un \textit{framebuffer} (\'area de memoria) que controla una pantalla de caracteres de 80 de ancho por 25 de alto.
-Este ser\'a el modo en que el \textit{kernel} operar\'a.
+Esto quiere decir que tiene disponible un \textit{framebuffer} (área de memoria) que controla una pantalla de caracteres de 80 de ancho por 25 de alto.
+Este será el modo en que el \textit{kernel} operará.
 
-El \textit{framebuffer} es accesible como \textit{RAM} normal, en la direcci\'on \textit{0xB8000}.
-Pero es importante dejar claro que a pesar de esto no es \textit{RAM} normal, es parte de la memoria de v\'ideo dedicada del controlador
-\textit{VGA} a la que se le ha realizado un mapeo de memoria v\'ia hardware al espacio lineal de direcciones. Es una diferencia importante.
-El \textit{framebuffer} es un array de palabras de 16 \textit{bits}, cada valor de 16 \textit{bits} representando un car\'acter.
+El \textit{framebuffer} es accesible como \textit{RAM} normal, en la dirección \textit{0xB8000}.
+Pero es importante dejar claro que a pesar de esto no es \textit{RAM} normal, es parte de la memoria de vídeo dedicada del controlador
+\textit{VGA} a la que se le ha realizado un mapeo de memoria vía hardware al espacio lineal de direcciones. Es una diferencia importante.
+El \textit{framebuffer} es un array de palabras de 16 \textit{bits}, cada valor de 16 \textit{bits} representando un carácter.
 
-En \textit{ASCII} (no se soporta el \textit{Unicode} en modo texto) solo se usan 8 \textit{bits} para representar el car\'acter,
-as\'i que disponemos de 8 \textit{bits} extra que el controlador \textit{VGA} usa para designar los colores del texto y del fondo (4 \textit{bits} cada uno).
-La divisi\'on de este valor de 16 \textit{bits} queda entonces como se muestra en la figura \ref{fig:vga_word}.
+En \textit{ASCII} (no se soporta el \textit{Unicode} en modo texto) solo se usan 8 \textit{bits} para representar el carácter,
+así que disponemos de 8 \textit{bits} extra que el controlador \textit{VGA} usa para designar los colores del texto y del fondo (4 \textit{bits} cada uno).
+La división de este valor de 16 \textit{bits} queda entonces como se muestra en la figura \ref{fig:vga_word}.
 
 \begin{figure}[htb]
 \centering
 \includegraphics[scale=0.7]{word_format.png}
-\caption{Elemento del array de v\'ideo}
+\caption{Elemento del array de vídeo}
 \label{fig:vga_word}
 \end{figure}
 
-El controlador \textit{VGA} tiene tambi\'en algunos puertos en el \textit{bus} principal de \textit{E/S}, que se puede usar para enviar instrucciones espec\'ificas.
-Los m\'as importantes para nosotros son el registro de control en \textit{0x3D4} y el registro de datos en \textit{0x3D5},
-mediante los cuales podemos actualizar la posici\'on del cursor.
+El controlador \textit{VGA} tiene también algunos puertos en el \textit{bus} principal de \textit{E/S}, que se puede usar para enviar instrucciones específicas.
+Los más importantes para nosotros son el registro de control en \textit{0x3D4} y el registro de datos en \textit{0x3D5},
+mediante los cuales podemos actualizar la posición del cursor.
 
-\section{La Pr\'actica}
-\subsection{C\'odigo de la pantalla}
+\section{La Práctica}
+\subsection{Código de la pantalla}
 
-Acontinuaci\'on se muestra la cabecera del c\'odigo de pantalla.
+A continuación se muestra la cabecera del código de pantalla.
 
 \lstinputlisting{../arch/screen.h}
 
-Como se puede ver es muy sencillo, solo define dos funciones (una para escribir un car\'acter y la otra para borrar la pantalla) y unas \textit{macros} para definir los colores.
+Como se puede ver es muy sencillo, solo define dos funciones (una para escribir un carácter y la otra para borrar la pantalla) y unas \textit{macros} para definir los colores.
 
-Internamente este c\'odigo hace solamente lo m\'as b\'asico.
-Imprime los caracteres uno a uno y va actualizando la posici\'on del cursor teniendo en cuenta que algunos caracteres especiales como el salto de l\'inea necesitan un trato especial.
+Internamente este código hace solamente lo más básico.
+Imprime los caracteres uno a uno y va actualizando la posición del cursor teniendo en cuenta que algunos caracteres especiales como el salto de línea necesitan un trato especial.
 
-\begin{lstlisting}[title=Funci\'on que escribe un car\'acter en pantalla]
+\begin{lstlisting}[title=Función que escribe un carácter en pantalla]
 // Write a char at the cursor's current position
 void arch_putc_color(uint8_t c, uint8_t color)
 {
@@ -125,10 +127,10 @@ void arch_putc_color(uint8_t c, uint8_t color)
 }
 \end{lstlisting}
 
-Para borrar la pantalla simplemente recorre todo el \textit{buffer} de v\'ideo, lo llena de espacios y posteriormente pone el cursor en la primera posici\'on.
-Y si al escribir un car\'acter llega al final del \textit{buffer}, recorre todas las lineas desde la segunda copiándolas a la l\'inea anterior y luego borra la ultima l\'inea.
+Para borrar la pantalla simplemente recorre todo el \textit{buffer} de vídeo, lo llena de espacios y posteriormente pone el cursor en la primera posición.
+Y si al escribir un carácter llega al final del \textit{buffer}, recorre todas las lineas desde la segunda copiándolas a la línea anterior y luego borra la ultima línea.
 
-\begin{lstlisting}[title=Funci\'on que hace \textit{scroll}]
+\begin{lstlisting}[title=Función que hace \textit{scroll}]
 INLINE void scroll(void)
 {
     // Move all lines one row up
@@ -146,14 +148,14 @@ INLINE void scroll(void)
 
 \subsection{\textit{kprintf}}
 
-De momento el código es suficiente para escribir por pantalla, pero lo realmente \'util es disponer de algo parecido al \textit{printf} de \textit{C}.
-As\'i que hemos definido nuestro propio \textit{printf} para el \textit{kernel}.
+De momento el código es suficiente para escribir por pantalla, pero lo realmente útil es disponer de algo parecido al \textit{printf} de \textit{C}.
+Así que hemos definido nuestro propio \textit{printf} para el \textit{kernel}.
 
 \lstinputlisting{../lib/kprintf.h}
 
-Este c\'odigo lo que hace es primero extraer todos los par\'ametros que se le han pasado a la funci\'on y despu\'es mostrarlos en el formato deseado.
+Este código lo que hace es primero extraer todos los parámetros que se le han pasado a la función y después mostrarlos en el formato deseado.
 
-\begin{lstlisting}[title=Funci\'on que imprime una cadena de caracteres]
+\begin{lstlisting}[title=Función que imprime una cadena de caracteres]
 void vkprintf(const char* format, va_list vl)
 {
     uint8_t color = SCREEN_COLOR(BLACK, L_GREY);
@@ -200,7 +202,7 @@ void vkprintf(const char* format, va_list vl)
                     kprint_int(d, 16, true, color);
                     break;
                 }
-                case '$': // Change color
+      %          case '$': // Change color
                     color = va_arg(vl, char);
                     break;
                 case '%': // %
@@ -222,32 +224,32 @@ void vkprintf(const char* format, va_list vl)
 
 \chapter{La GDT y la IDT}
 
-La GDT y la IDT son tablas de descriptores. Son arrays de flags y bits que describen la operaci\'{o}n del sistema de segmentaci\'{o}n (en el caso de la GDT), o la tabla del vector de interrupciones (IDT).
+La GDT y la IDT son tablas de descriptores. Son arrays de flags y bits que describen la operación del sistema de segmentación (en el caso de la GDT), o la tabla del vector de interrupciones (IDT).
 
 
-\section{Tabla Global de Descriptores (teor\'{i}a)}
+\section{Tabla Global de Descriptores (teoría)}
 
-La arquitectura x86 tiene dos m\'{e}todos de protecci\'{o}n de memoria y de dar memoria virtual - segmentaci\'{o}n y paginaci\'{o}n .
+La arquitectura x86 tiene dos métodos de protección de memoria y de dar memoria virtual - segmentación y paginación .
 
-Con segmentaci\'{o}n, cada acceso a memoria es evaluado respecto a un segmento. Esto quiere decir que a la direcci\'{o}n base del segmento se le suma la direcci\'{o}n de memoria y despu\'{e}s se comprueba con la longitud del segmento. Se puede pensar en el segmento como una ventana al espacio de direcciones - El proceso no sabe si es una ventana, todo lo que ve es un espacio lineal de direcciones que empieza en cero y llega hasta la longitud del segmento.
+Con segmentación, cada acceso a memoria es evaluado respecto a un segmento. Esto quiere decir que a la dirección base del segmento se le suma la dirección de memoria y después se comprueba con la longitud del segmento. Se puede pensar en el segmento como una ventana al espacio de direcciones - El proceso no sabe si es una ventana, todo lo que ve es un espacio lineal de direcciones que empieza en cero y llega hasta la longitud del segmento.
 
-Con paginaci\'{o}n, el espacio de direcciones en bloques (normalmente de 4KB, pero esto puede cambiar), llamados p\'{a}ginas. Cada p\'{a}gina puede ser mapeada en la memoria f\'{i}sica - mapeada en lo que se llama 'frame'. O puede ser no-mapeada. De este modo se pueden crear espacios de memoria virtual.
+Con paginación, el espacio de direcciones en bloques (normalmente de 4KB, pero esto puede cambiar), llamados páginas. Cada página puede ser mapeada en la memoria física - mapeada en lo que se llama 'frame'. O puede ser no-mapeada. De este modo se pueden crear espacios de memoria virtual.
 
-Cada uno de estos m\'{e}todos tienen sus ventajas, pero la paginaci\'{o}n es mucho mejor. La segmentaci\'{o}n se est\'{a} volviendo obsoleta a gran velocidad como m\'{e}todo de protecci\'{o}n de memoria y memoria virtual, aunque sigue utiliz\'{a}ndose. De hecho, la arquitectura x86-64 requiere memoria plana (un segmento con una base de 0 y un l\'{i}mite de 0xFFFFFFFF) para que algunas de sus instrucciones operen de un modo correcto.
+Cada uno de estos métodos tienen sus ventajas, pero la paginación es mucho mejor. La segmentación se está volviendo obsoleta a gran velocidad como método de protección de memoria y memoria virtual, aunque sigue utilizándose. De hecho, la arquitectura x86-64 requiere memoria plana (un segmento con una base de 0 y un límite de 0xFFFFFFFF) para que algunas de sus instrucciones operen de un modo correcto.
 
-Sin emabargo, la paginaci\'{o}n est\'{a} totalmente incorporada a la arquitectura x86. Es imposible evitarla. Aqu\'{i} vamos a explicar como crear la Tabla Global de Descriptores - una lista de descriptores de segmento.
+Sin embargo, la paginación está totalmente incorporada a la arquitectura x86. Es imposible evitarla. Aquí vamos a explicar como crear la Tabla Global de Descriptores - una lista de descriptores de segmento.
 
-Como se ha mencionado antes, vamos a intentar y crear un modelo de memoria plano. La ventana del segmento deber\'{i}a comenzar en 0x0000000 y etenderse hasta 0xFFFFFFFF (el final de la memoria). Sin embargo, hay una cosa que la segmentaci\'{o}n puede hacer y la paginaci\'{o}n no puede: establecer el nivel de privilegio.
+Como se ha mencionado antes, vamos a intentar y crear un modelo de memoria plano. La ventana del segmento debería comenzar en 0x0000000 y etenderse hasta 0xFFFFFFFF (el final de la memoria). Sin embargo, hay una cosa que la segmentación puede hacer y la paginación no puede: establecer el nivel de privilegio.
 
-El nivel de privilegio es 0 siendo \'{e}ste el m\'{a}s privilegiado y 3 el menos. Los procesos en el nivel cero se dice que se ejecutan en modo-kernel o modo-supervisor, porque pueden usar instrucciones como \textit{sti} y \textit{cli}, algo que muchos procesos no pueden. Normalmente, los niveles 1 y 2 est\'{a}n sin usar. T\'{e}cnicamente pueden acceder a un mayor subconjunto de instrucciones del modo-supervisor que el nivel 3. Algunas arquitecturas de microkernel usan estos para ejecutar procesos servidor o controladores.
+El nivel de privilegio es 0 siendo éste el más privilegiado y 3 el menos. Los procesos en el nivel cero se dice que se ejecutan en modo-kernel o modo-supervisor, porque pueden usar instrucciones como \textit{sti} y \textit{cli}, algo que muchos procesos no pueden. Normalmente, los niveles 1 y 2 están sin usar. Técnicamente pueden acceder a un mayor subconjunto de instrucciones del modo-supervisor que el nivel 3. Algunas arquitecturas de microkernel usan estos para ejecutar procesos servidor o controladores.
 
-Un descriptor de segmento lleva en su interior un n\'u{u}mero que representa el nivel al que si aplica. Para cambiar el nivel de privilegio (que haremos m\'{a}s adelante), entre otras cosas, necesitamos segmentos que representen tanto al nivel 0 como al nivel 3.
+Un descriptor de segmento lleva en su interior un número que representa el nivel al que si aplica. Para cambiar el nivel de privilegio (que haremos más adelante), entre otras cosas, necesitamos segmentos que representen tanto al nivel 0 como al nivel 3.
 
-\section{Tabla Global de Descriptores (pr\'{a}ctica)}
+\section{Tabla Global de Descriptores (práctica)}
 
-GRUB puede crear una GDT por ti, el problema es que no sabes donde est\'{a} esa GDT o lo que hay en ella. De modo que puedes sobreescribirla accidentalmente, tr\'{a}s lo cual el ordenador fallar\'{i}a y se reiniciar\'{i}a.
+GRUB puede crear una GDT por ti, el problema es que no sabes donde está esa GDT o lo que hay en ella. De modo que puedes sobrescribirla accidentalmente, tras lo cual el ordenador fallaría y se reiniciaría.
 
-En el x86 tenemos 6 registros de segmentaci\'{o}n. Cada uno tiene una compensaci\'{o}n para la GDT. Hay sc (segmento de c\'{o}digo), sd (segmento de datos), se (segmento extra), sf, sg, ss (segmento de pila). El segmento de c\'{o}digo debe referenciar a un descriptor que est\'{e} puedo como 'segmento de c\'{o}digo'. Existe un flag para esto en el byte de acceso. El resto deben referenciar a un descriptor que est\'{e} puesto como 'segmento de datos'.
+En el x86 tenemos 6 registros de segmentación. Cada uno tiene una compensación para la GDT. Hay sc (segmento de código), sd (segmento de datos), se (segmento extra), sf, sg, ss (segmento de pila). El segmento de código debe referenciar a un descriptor que esté puedo como 'segmento de código'. Existe un flag para esto en el byte de acceso. El resto deben referenciar a un descriptor que esté puesto como 'segmento de datos'.
 
 \begin{figure}[htb]
 \centering
@@ -388,7 +390,7 @@ static void gdt_set_gate(s32int num, u32int base, u32int limit, u8int access, u8
 
 Analicemos ese código un poco. init\_gdt inicializa la estructura del puntero gdt - el límite es el tamaño de cada entrada gdt multiplicado por 5 (tenemos 5 entradas) ¿Por qué 5? Tenemos un segmento de código y uno de datos para el kernel, segmento de código y de datos para modo usuario y una entrada null. Esto debe estar presente o ocurrirán cosas malas.
 
-gdt\_init prepara 5 descriptores llamando gdt\_set\_gate. gdt\_set\_gate mueve y cambia los bits, y debería explicarse por sí misma echandole un buen vistazo. Hay que fijarse en que la única cosas que cambia entre los 4 descriptores de segmento es el byte de acceso - 0x9A, 0x92, 0xFA, 0xF2. Se puede ver, si se mapean los bits y se comparan con el diagrama de arriba que los bits que cambian son los campos de tipo y DPL. DPL es el nivel de privilegio del descriptor - 3 para código de usuario y 0 para código de kernel. El tipo especifica si el segmento es un segmento de código o de datos (el procesador comprueba esto a menudo, y puede ser la fuente de mucha frustración).
+gdt\_init prepara 5 descriptores llamando gdt\_set\_gate. gdt\_set\_gate mueve y cambia los bits, y debería explicarse por sí misma echándole un buen vistazo. Hay que fijarse en que la única cosas que cambia entre los 4 descriptores de segmento es el byte de acceso - 0x9A, 0x92, 0xFA, 0xF2. Se puede ver, si se mapean los bits y se comparan con el diagrama de arriba que los bits que cambian son los campos de tipo y DPL. DPL es el nivel de privilegio del descriptor - 3 para código de usuario y 0 para código de kernel. El tipo especifica si el segmento es un segmento de código o de datos (el procesador comprueba esto a menudo, y puede ser la fuente de mucha frustración).
 
 Finalmente tenemos nuestra función ASM que escribirá el puntero GDT.
 
@@ -414,7 +416,7 @@ Esta funcion toma el primer parametro pasado (in esp+4), carga el valor al que a
 
 \section{Tabla de Descriptores de Interrupción (teoría)}
 
-Hay veces en se quiere interrumpir al procesaro. Se quiere detener lo que está haciendo, y forzarlo a hacer algo diferente. Un ejemplo de esto es cuando un se dispara una petición de interrupción (IRQ) de reloj o de teclado. Una interrupción es como una señal de POSIX - te dice que algo de interes ha ocurrido. El procesador puede registrar 'signal handlers' (handlers de interrupción) que pueden ocuparse de la interrupción y volver después al semento de código que se estaba ejecutando antes de que se disparase. Las interrupciones pueden ser disparadas externamente, por medio de IRQ, o internamente, por medio de la instrucción 'int n'. Hay razones muy útiles para querer disparar interrupciones por software, pero eso será para otro capítulo.
+Hay veces en se quiere interrumpir al procesador. Se quiere detener lo que está haciendo, y forzarlo a hacer algo diferente. Un ejemplo de esto es cuando un se dispara una petición de interrupción (IRQ) de reloj o de teclado. Una interrupción es como una señal de POSIX - te dice que algo de interés ha ocurrido. El procesador puede registrar 'signal handlers' (handlers de interrupción) que pueden ocuparse de la interrupción y volver después al semento de código que se estaba ejecutando antes de que se disparase. Las interrupciones pueden ser disparadas externamente, por medio de IRQ, o internamente, por medio de la instrucción 'int n'. Hay razones muy útiles para querer disparar interrupciones por software, pero eso será para otro capítulo.
 
 La \textit{Tabla de Descriptores de Interrupción} dice al procesador donde encontrar handlers para cada interrupción. Es muy parecida a la GDT. Es un array de entradas, cada una de las cuales corresponde a un número de interrupción. Hay 256 posibles número de interrupción, de modo que 256 han de ser definidos. Si se da una interrupción y no hay una entrada para ella (incluso una entrada a NULL sería correcta), el procesador se reiniciaría.
 
