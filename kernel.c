@@ -1,5 +1,6 @@
 
 #include "arch/arch.h"
+#include "arch/multitask.h"
 #include "arch/screen.h"
 #include "lib/kprintf.h"
 #include "lib/lib.h"
@@ -48,6 +49,7 @@ void kernel_main(void* mbd, unsigned int magic, uint32_t initial_stack)
     interrupt_handlers[32] = &rtc_tick;
 
     kprintf("Ok!\n");
+    //kprintf("fork: %i\n", fork());
 
     // malloc test
     int* a = kmalloc(10);
