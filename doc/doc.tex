@@ -202,7 +202,7 @@ void vkprintf(const char* format, va_list vl)
                     kprint_int(d, 16, true, color);
                     break;
                 }
-      %          case '$': // Change color
+                case '$': // Change color
                     color = va_arg(vl, char);
                     break;
                 case '%': // %
@@ -219,17 +219,17 @@ void vkprintf(const char* format, va_list vl)
     }
 }
 \end{lstlisting}
+% '$
 
+\chapter{La \textit{GDT} y la \textit{IDT}}
 
-
-\chapter{La GDT y la IDT}
-
-La GDT y la IDT son tablas de descriptores. Son arrays de flags y bits que describen la operación del sistema de segmentación (en el caso de la GDT), o la tabla del vector de interrupciones (IDT).
-
+La \textit{GDT} y la \textit{IDT} son tablas de descriptores.
+Son matrices (\textit{arrays}) de \textit{flags} y \textit{bits} que describen la operación del sistema
+de segmentación (en el caso de la \textit{GDT}), o la tabla del vector de interrupciones (\textit{IDT}).
 
 \section{Tabla Global de Descriptores (teoría)}
 
-La arquitectura x86 tiene dos métodos de protección de memoria y de dar memoria virtual - segmentación y paginación .
+La arquitectura x86 tiene dos métodos de protección de memoria y de dar memoria virtual - segmentación y paginación.
 
 Con segmentación, cada acceso a memoria es evaluado respecto a un segmento. Esto quiere decir que a la dirección base del segmento se le suma la dirección de memoria y después se comprueba con la longitud del segmento. Se puede pensar en el segmento como una ventana al espacio de direcciones - El proceso no sabe si es una ventana, todo lo que ve es un espacio lineal de direcciones que empieza en cero y llega hasta la longitud del segmento.
 
